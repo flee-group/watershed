@@ -19,4 +19,12 @@ library(watershed)
 ```
 
 
-## Step 1:
+## 0. Preparing the installation
+
+Be sure you have followed the installation guide and have a working installation of `watershed`, `rgrass7`, and Grass GIS 7.4 or 7.6 (other version may work, but are untested).
+
+## 0.5. Preparing the DEM
+
+Many workflows advise either using a "burned-in" DEM or a "filled" DEM to avoid topological problems. The tools used by `watershed` should in theory not require either of those steps, so in general it is recommended you skip this step unless you encounter problems later on. Burning in a DEM is not yet supported, so if this step is required it is best to use another tool and then bring the already burned DEM into R. Filling the DEM is supported however; see `?fill_dem`. 
+
+## 1. 
