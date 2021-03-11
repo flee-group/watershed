@@ -10,6 +10,8 @@
 #' @keywords internal
 .start_grass = function(layer, layer_name, gisBase, home = tempdir(), gisDbase = home,
 						location = 'watershed', mapset = 'PERMANENT') {
+	if(missing(gisBase))
+		gisBase = getOption("gisBase")
 	rgrass7::initGRASS(gisBase, home=home, gisDbase = gisDbase, location = location, 
 					   mapset = mapset, override = TRUE)	
 	err = rgrass7::execGRASS("g.proj", flags = "c", proj4 = sp::proj4string(layer), intern=TRUE)
@@ -24,16 +26,63 @@
 #' Add a raster to grass
 #' @param x A [raster::RasterLayer] or [sp::SpatialPixelsDataFrame]
 #' @param name The name of the layer in grass
+#' @param flags Any flags to pass to [rgrass7::writeRAST]
 #' @param overwrite Should the file be overwritten if it exists
 #' @keywords internal
-.add_raster = function(x, name, overwrite = TRUE) {
+.add_raster = function(x, name, flags, overwrite = TRUE) {
 	if("RasterLayer" %in% class(x))
 		x = .raster_to_spdf(x)
+	if(missing(flags))
+		flags = list()
 	if(overwrite)
 		flags = c(flags, "overwrite")
-	rgrass7::writeRAST(x, layerName, flags = flags)
-	ws_env$rasters = c(ws_env$rasters, layerName)
+	rgrass7::writeRAST(x, name, flags = unlist(flags))
+	ws_env$rasters = c(ws_env$rasters, name)
 }
+
+
+#' Read and format rasters from a grass session
+#' @param layers A vector of names of rasters to read
+#' @param file The file name to save the raster
+#' @keywords internal
+.read_rasters = function(layers, file) {
+	ras = sapply(layers, rgrass7::readRAST)
+	ras = sapply(ras, raster::raster)
+	if(length(layers) > 1) {
+		ras = raster::stack(ras)
+		names(ras) = layers
+	} else {
+		ras = ras[[1]]
+	}
+	if(!missing(file) && !is.na(file))
+		ras = raster::writeRaster(ras, file)
+	ras
+}
+
+
+#' Clean up grass files
+#' @param raster Raster layers to remove, if missing, all will be removed, if NA, none will be removed
+#' @param vector Vector layers to remove, if missing, all will be removed, if NA, none will be removed
+#' @details The default mode is to clean everything, removing all layers from the grass session
+#' @keywords internal
+.clean_grass = function(raster, vector) {
+	if(missing(raster))
+		raster = ws_env$rasters
+	if(missing(vector))
+		vector = ws_env$vectors
+	
+	if(!is.na(raster) && length(raster) > 0) {
+		sapply(raster, function(r) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="raster", name=r))
+		ws_env$rasters = list()
+	}
+	
+	if(!is.na(vector) && length(vector) > 0) {
+		sapply(vector, function(v) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="vector", name=v))		
+		ws_env$vectors = list()
+	}
+}
+
+
 
 
 #' Produce a [sp::SpatialPixelsDataFrame] from a [raster::RasterLayer]
@@ -100,7 +149,7 @@ find_grass = function() {
 #' @value The most preferred from x
 #' @keywords internal
 .preferred_grass_version = function(x) {
-	gVersion = as.numeric(sub(".*(7)\\.?([0-9]).*(\\.app)?", "\\1\\2", grassBase))
+	gVersion = as.numeric(sub(".*(7)\\.?([0-9]).*(\\.app)?", "\\1\\2", x))
 	if(76 %in% gVersion) {
 		res = x[gVersion == 76]
 	} else if(74 %in% gVersion) {

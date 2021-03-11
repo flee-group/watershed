@@ -16,12 +16,12 @@ RoxygenNote: 7.1.1
 Depends:
     R (>= 3.5.0)
 Imports:
-    rgrass7 (>= 0.2)
+    rgrass7 (>= 0.2),
+    raster (>= 3.3)
 SystemRequirements:
 	GRASS GIS (>= 7.4)
 Suggests: 
     knitr,
     rmarkdown,
-    raster (>= 3.3),
     testthat
 VignetteBuilder: knitr
