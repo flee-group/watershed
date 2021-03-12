@@ -12,19 +12,19 @@
 						location = 'watershed', mapset = 'PERMANENT') {
 	if(missing(gisBase))
 		gisBase = getOption("gisBase")
-	rgrass7::initGRASS(gisBase, home=home, gisDbase = gisDbase, location = location, 
-					   mapset = mapset, override = TRUE)	
+	rgrass7::initGRASS(gisBase, home=home, gisDbase = gisDbase, location = location,
+					   mapset = mapset, override = TRUE)
 	err = rgrass7::execGRASS("g.proj", flags = "c", proj4 = sp::proj4string(layer), intern=TRUE)
 	ext = as.character(as.vector(raster::extent(layer)))
-	rasres = as.character(raster::res(layer))	
-	rgrass7::execGRASS("g.region", n = ext[4], s = ext[3], e = ext[2], w = ext[1], 
-					   rows=raster::nrow(layer), cols=raster::ncol(layer), nsres = rasres[2], 
+	rasres = as.character(raster::res(layer))
+	rgrass7::execGRASS("g.region", n = ext[4], s = ext[3], e = ext[2], w = ext[1],
+					   rows=raster::nrow(layer), cols=raster::ncol(layer), nsres = rasres[2],
 					   ewres = rasres[1])
 	.add_raster(layer, layer_name)
 }
 
 #' Add a raster to grass
-#' @param x A [raster::RasterLayer] or [sp::SpatialPixelsDataFrame]
+#' @param x A [raster::raster] or [sp::SpatialPixelsDataFrame]
 #' @param name The name of the layer in grass
 #' @param flags Any flags to pass to [rgrass7::writeRAST]
 #' @param overwrite Should the file be overwritten if it exists
@@ -70,14 +70,14 @@
 		raster = ws_env$rasters
 	if(missing(vector))
 		vector = ws_env$vectors
-	
+
 	if(!is.na(raster) && length(raster) > 0) {
 		sapply(raster, function(r) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="raster", name=r))
 		ws_env$rasters = list()
 	}
-	
+
 	if(!is.na(vector) && length(vector) > 0) {
-		sapply(vector, function(v) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="vector", name=v))		
+		sapply(vector, function(v) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="vector", name=v))
 		ws_env$vectors = list()
 	}
 }
@@ -85,9 +85,8 @@
 
 
 
-#' Produce a [sp::SpatialPixelsDataFrame] from a [raster::RasterLayer]
-#'
-#' @param x A [raster::RasterLayer] object
+#' Produce a [sp::SpatialPixelsDataFrame] from a [raster::raster]
+#' @param x A [raster::raster] object
 #' @param complete.cases Boolean, if TRUE only complete (non-na) rows are returned
 #' @return A [sp::SpatialPixelsDataFrame]
 #' @keywords internal
@@ -105,21 +104,21 @@
 
 
 #' Try to locate a user's GRASS GIS installation
-#' 
+#'
 #' Locates a grass installation in common locations on Mac, Windows, and Linux. This is normally
 #' run automatically when the package is loaded. If multiple
 #' installations are present, the function will prefer 7.6, 7.4, and then whatever is most recent.
-#' 
+#'
 #' In some (many?) cases, this function will fail to find a grass installation, or users may wish
 #' to specify a different version than what is detected automatically. In these cases, it is possible
 #' to manually specify the grass location using `options(gisBase = "path/to/grass")`.
-#' 
-#' @return The path to the user's grass location, or NULL if not found 
+#'
+#' @return The path to the user's grass location, or NULL if not found
 #' @export
 find_grass = function() {
 	os = Sys.info()['sysname']
 	gisBase = NULL
-	
+
 	if(grepl("[Ll]inux", os)) {
 		## try a system call
 		gisBase = sapply(c("grass76", "grass74", "grass78"), function(gr) {
@@ -146,7 +145,7 @@ find_grass = function() {
 
 #' Choose a preferred version of grass from a list of options
 #' @param x A vector of grass home directories
-#' @value The most preferred from x
+#' @return The most preferred from x
 #' @keywords internal
 .preferred_grass_version = function(x) {
 	gVersion = as.numeric(sub(".*(7)\\.?([0-9]).*(\\.app)?", "\\1\\2", x))
