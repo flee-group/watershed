@@ -41,3 +41,10 @@ vignettes/*.pdf
 inst/doc
 
 *.Rproj
+doc
+Meta
+
+## vignette stuff
+vignettes/*_cache
+vignettes/*_files
+

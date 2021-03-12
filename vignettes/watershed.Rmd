@@ -1,6 +1,8 @@
 ---
 title: "watershed"
-output: rmarkdown::html_vignette
+output: 
+  rmarkdown::html_vignette:
+  html_document:
 vignette: >
   %\VignetteIndexEntry{watershed}
   %\VignetteEngine{knitr::rmarkdown}
@@ -12,6 +14,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+knitr::opts_chunk$set(fig.width=5.5, fig.height=5.5, collapse = TRUE, comment = "##", dev="png")
+par(mar = c(0,0,0,0))
 ```
 
 ```{r setup}
@@ -33,42 +37,51 @@ The pared-down workflow offered by `watershed` provides a relatively quick way t
 
 ```{r dem}
 library(raster)
-data(ybbs_dem)
-plot(ybbs_dem, col=terrain.colors(20), axes = FALSE)
+data(kamp_dem)
+plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
 ```
 
 The `delineate()` function is the main workhorse here. The resulting raster stack contains 3 layers: `accum` is the flow accumulation, `drainage` is the drainage direction, and `stream` is the stream map.
 
 ```{r delineate, cache = TRUE}
-ybbs = delineate(ybbs_dem)
-plot(ybbs_dem, col=terrain.colors(20), axes = FALSE)
-plot(ybbs$stream, col='blue', add = TRUE, legend = FALSE)
+kamp = delineate(kamp_dem)
+plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
+plot(kamp$stream, col='blue', add = TRUE, legend = FALSE)
 ```
 
-The defaults produce pretty good results in this case. Perhaps we know from on-the-ground work, or aerial photo inspection, that there are more streams that what is produced here. We can improve this with the `threshold` parameter, which sets the default minimum basin size. This defaults to 1e5 m^2, or 0.1 km^2. Here we reduce it by half; note that this gives us a warning about possible long computation times; it's not such a problem here, because the Ybbs is a relatively small area, but with large DEMs this can make the computation very slow.
+The defaults produce pretty good results in this case. Perhaps we know from on-the-ground work, or aerial photo inspection, that there are more streams that what is produced here. We can improve this with the `threshold` parameter, which sets the default minimum basin size. This defaults to 1e6 m^2, or 1 km^2. Here we reduce it by half; note that this gives us a warning about possible long computation times; it's not such a problem here, because the Ybbs is a relatively small area, but with large DEMs this can make the computation very slow.
 
 ```{r delineate2, cache = TRUE}
-ybbs = delineate(ybbs_dem, threshold = 0.5e5)
-plot(ybbs_dem, col=terrain.colors(20), axes = FALSE)
-plot(ybbs$stream, col='blue', add = TRUE, legend = FALSE)
+kamp2 = delineate(kamp_dem, threshold = 0.5e5)
+plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
+plot(kamp2$stream, col='blue', add = TRUE, legend = FALSE)
+
+rm(kamp2)
 ```
 
-Too many! We try again with a higher threshold.
-
-```{r delineate3, cache = TRUE}
-ybbs = delineate(ybbs_dem, threshold = 0.95e5)
-plot(ybbs_dem, col=terrain.colors(20), axes = FALSE)
-plot(ybbs$stream, col='blue', add = TRUE, legend = FALSE)
-```
-
+This produces a lot of streams! From our fieldwork in the Kamp, we know that the default produces a pretty good network, so we will keep the first one.
 
 ## 2. Selecting a single basin
 
-We would like to restrict our stream map to a single catchment. `delineate` offers this option; here we set `outlet = NA`, which will use the largest stream as the outlet for the desired basin. Alternatively, we could zoom in on the layer and choose the x-y coordinates of the outlet we wanted to use, and provide these as a vector in outlet.
+We would like to restrict our stream map to a single catchment. `delineate` offers this option; here we set `outlet = NA`, which will use the largest stream (with a catchment completely contained within the DEM) as the outlet for the desired basin. Alternatively, we could zoom in on the layer and choose the x-y coordinates of the outlet we wanted to use, and provide these as a vector in outlet.
 
-```{r delineate3, cache = TRUE}
-ybbs = delineate(ybbs_dem, threshold = 0.95e5, outlet = c(4704445, 2847440))
-plot(ybbs_dem, col=terrain.colors(20), axes = FALSE)
-plot(ybbs$catchment, col = "#2277FF66", add = TRUE, legend = FALSE)
-plot(ybbs$stream, col='blue', add = TRUE, legend = FALSE)
+
+```{r crop, cache = TRUE}
+kamp = delineate(kamp_dem, outlet = NA)
+## alternative - note that the coordinates must be exactly on the delineated stream
+## for this to work
+# kamp = delineate(kamp_dem, outlet = c(4704588, 2847762))
+plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
+plot(kamp$stream, col='blue', add = TRUE, legend = FALSE)
 ```
+
+
+## Producing a vector map
+
+## Finer-scale control
+
+## Computing catchment area
+
+## Discharge and hydraulic geometry
+
+## Topologies
