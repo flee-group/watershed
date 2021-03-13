@@ -1,10 +1,10 @@
 ---
-title: "watershed"
+title: "Delineating a watershed"
 output: 
   rmarkdown::html_vignette:
   html_document:
 vignette: >
-  %\VignetteIndexEntry{watershed}
+  %\VignetteIndexEntry{Delineating a watershed}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -33,7 +33,7 @@ Many workflows advise either using a "burned-in" DEM or a "filled" DEM to avoid 
 
 ## 1. Delineating the stream
 
-The pared-down workflow offered by `watershed` provides a relatively quick way to go from a dem to a stream map. We will make a first-draft map using the `ybbs_dem` dataset provided by this package, for the Ybbs river in Austria. The DEM is a `raster`, so we load this package as well.
+The pared-down workflow offered by `watershed` provides a relatively quick way to go from a dem to a stream map. We will make a first-draft map using the `kamp_dem` dataset provided by this package, for the Ybbs river in Austria. The DEM is a `raster`, so we load this package as well.
 
 ```{r dem}
 library(raster)
@@ -41,7 +41,7 @@ data(kamp_dem)
 plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
 ```
 
-The `delineate()` function is the main workhorse here. The resulting raster stack contains 3 layers: `accum` is the flow accumulation, `drainage` is the drainage direction, and `stream` is the stream map.
+The `delineate()` function is the main workhorse here. The resulting raster stack contains 3 layers: `accum` is the flow accumulation, `drainage` is the drainage direction, and `stream` is the stream map. Note that the plotted stream looks "speckled" because it is a raster, and we don't plot every pixel to save time; later you will see how to produce a vector map of streams.
 
 ```{r delineate, cache = TRUE}
 kamp = delineate(kamp_dem)
@@ -75,6 +75,41 @@ plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
 plot(kamp$stream, col='blue', add = TRUE, legend = FALSE)
 ```
 
+## 3. Generating topologies
+
+Many later features require a topology; this simply a square matrix `T`, with one row/column for each pixel or reach in the river network. `T[i,j] == 1` indicates that pixel/reach `i` is directly upstream of pixel/reach `j` (in other words, `j` gets water from `i` without that water flowing through any other intermediate pixels/reaches).
+
+Generating the topology can take some time for large and/or complex river networks, so it is best to do it once you have a reasonable first pass.
+
+Our first step is to crop the rasters from the previous steps to only include our catchment of interest. Then we load the Matrix package to handle the `sparseMatrix` returned by `pixel_topology`. Finally, we create two topologies; one for the pixels, and one for reaches.
+
+```{r topol, cache=TRUE}
+catch = kamp$catchment
+catch = trim(catch)
+kamp = crop(kamp, catch)
+
+library(Matrix)
+kamp_topology = pixel_topology(kamp)
+kamp_reach_T = reach_topology(kamp, kamp_topology)
+
+```
+
+Note the warning, indicating that there is a confluence where more than 2 streams flow into the same pixel. This is not a serious problem, so we will ignore it for now.
+
+
+## 4. Revising the delineation
+
+
+## 4. Producing smaller reaches
+
+The default output from `delineate` is to assign each pixel to a reach, where a reach is a stretch of river between confluences. For many applications, it is useful to split these into smaller sections. `watershed` includes a function to split reaches into fixed (approximately) equal-length sections. Unequal-length reaches is a feature that may be added if we receive enough requests.
+
+```{r reach_split, cache=TRUE}
+
+
+```
+
+
 
 ## Producing a vector map
 
@@ -84,4 +119,4 @@ plot(kamp$stream, col='blue', add = TRUE, legend = FALSE)
 
 ## Discharge and hydraulic geometry
 
-## Topologies
+## My network doesn't match aerial photos!

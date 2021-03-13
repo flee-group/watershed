@@ -3,3 +3,4 @@
 export(delineate)
 export(fill_dem)
 export(find_grass)
+export(pixel_topology)

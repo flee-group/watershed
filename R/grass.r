@@ -107,7 +107,7 @@
 #'
 #' Locates a grass installation in common locations on Mac, Windows, and Linux. This is normally
 #' run automatically when the package is loaded. If multiple
-#' installations are present, the function will prefer 7.6, 7.4, and then whatever is most recent.
+#' installations are present, the function will prefer 7.8, 7.6, 7.4, and then whatever is most recent.
 #'
 #' In some (many?) cases, this function will fail to find a grass installation, or users may wish
 #' to specify a different version than what is detected automatically. In these cases, it is possible
@@ -121,7 +121,7 @@ find_grass = function() {
 
 	if(grepl("[Ll]inux", os)) {
 		## try a system call
-		gisBase = sapply(c("grass76", "grass74", "grass78"), function(gr) {
+		gisBase = sapply(c("grass78", "grass76", "grass74"), function(gr) {
 			tryCatch(system2(gr, args = c("--config", "path"), stdout = TRUE, stderr = TRUE),
 					 error = function(e) NA)
 		})
@@ -149,7 +149,9 @@ find_grass = function() {
 #' @keywords internal
 .preferred_grass_version = function(x) {
 	gVersion = as.numeric(sub(".*(7)\\.?([0-9]).*(\\.app)?", "\\1\\2", x))
-	if(76 %in% gVersion) {
+	if(78 %in% gVersion) {
+		res = x[gVersion == 78]
+	} else if(76 %in% gVersion) {
 		res = x[gVersion == 76]
 	} else if(74 %in% gVersion) {
 		res = x[gVersion == 74]

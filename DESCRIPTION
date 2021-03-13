@@ -1,6 +1,6 @@
 Package: watershed
 Title: Tools for Watershed Delineation
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -23,5 +23,6 @@ SystemRequirements:
 Suggests: 
     knitr,
     rmarkdown,
-    testthat
+    testthat,
+    Matrix (>= 1.2)
 VignetteBuilder: knitr

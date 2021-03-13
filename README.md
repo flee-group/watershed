@@ -1,12 +1,12 @@
 # watershed: An R-package for delineating watersheds using a digital elevation model
 
 This is a simplified set of tools for deriving a river network from digital elevation data. 
-The package relies on GRASS GIS (v. 7.4 or 7.6) to do the heavy lifting, thus an installation of `GRASS GIS` and the `rgrass7` package is required for `watershed` to function. 
+The package relies on GRASS GIS (v7.8, 7.6, or 7.4) to do the heavy lifting, thus an installation of `GRASS GIS` and the `rgrass7` package is required for `watershed` to function. 
 Note that this is meant to be a simplified workflow for watershed delineation using only R code; for more options users can use rgrass7 to access GRASS GIS functions directly.
 
 ## Installation
 
-Before installing this package, you should install [GRASS GIS](https://grass.osgeo.org). The latest tested version is 7.6; version 7.4 also works, earlier or later versions are unknown (but please send us feedback if you try this!).
+Before installing this package, you should install [GRASS GIS](https://grass.osgeo.org). The latest tested version is 7.8; versions 7.6 and 7.4 also work, earlier or later versions are unknown (but please send us feedback if you try this!).
 
 **Windows**: The preferred distribution is the OSGeo4W distribution; `watershed` should be able to auto-detect your grass installation if you install this version.
 
