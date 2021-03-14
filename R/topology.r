@@ -9,7 +9,49 @@ reach_topology = function(x, Tp, stream) {
 	if(!requireNamespace("Matrix"))
 		stop("This functionality requires the Matrix package; please install it with install.packages('Matrix') and try again.")
 
+	if(missing(stream))
+		stream = x[['stream']]
+
+	if(!is.null(getOption("mc.cores")) & getOption("mc.cores") > 1) {
+		lapplfun = parallel::mclapply
+	} else {
+		lapplfun = lapply
+	}
+
+	rids = unique(raster::values(stream))
+	rids = rids[!is.na(rids)]
+	rids = sort(rids)
+
+	if(!all.equal(rids, 1:length(rids)))
+		stop("ReachIDs not in strict ascending order, they must be renumbered")
+
+	adj = lapplfun(reaches, function(r) .reach_upstream(ws, r))
+	adj = do.call(rbind, adj)
+	stop("check the below; I think columns are reversed")
+	adjspMat = Matrix::sparseMatrix(adjMat[,1], adjMat[,2], dims=rep(max(ws$data$reachID), 2),
+									dimnames = list(reaches, reaches))
+	adjspMat
+
 }
+
+#' Find all reaches directly upstream from a given reach
+#' @keywords internal
+.reach_upstream <- function(Tp, rid) {
+
+	stop("update")
+	ids <- which(ws$data$reachID == rch)
+	reachAdj <- ws$adjacency[ids,ids, drop = FALSE]
+	mostUpstream <- ids[which(Matrix::rowSums(reachAdj) == 0)]
+	adjMatUp <- as.matrix(ws$adjacency[mostUpstream,])
+	upRch <- which(adjMatUp == 1)
+	if(length(upRch) > 0) {
+		upRch <- ws$data$reachID[upRch]
+		return(cbind(rch, upRch))
+	} else return(NULL)
+}
+
+
+
 
 #' Buid a topology for each pixel in a delineated stream
 #' @param x A [raster::stack], such as one created by [delineate()], or specify layers separately with `drain` and `stream`.
