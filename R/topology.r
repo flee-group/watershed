@@ -25,7 +25,7 @@ reach_topology = function(x, Tp, stream) {
 	if(!all.equal(rids, 1:length(rids)))
 		stop("ReachIDs not in strict ascending order, they must be renumbered")
 
-	adj = lapplfun(reaches, function(r) .reach_upstream(ws, r))
+	adj = lapplfun(rids, .upstream_r, stream = stream, Tp = Tp)
 	adj = do.call(rbind, adj)
 	stop("check the below; I think columns are reversed")
 	adjspMat = Matrix::sparseMatrix(adjMat[,1], adjMat[,2], dims=rep(max(ws$data$reachID), 2),
@@ -34,30 +34,59 @@ reach_topology = function(x, Tp, stream) {
 
 }
 
-#' Find all reaches directly upstream from a given reach
+#' Find all reaches directly upstream from a given reach using a pixel topology
+#' @param stream A stream raster (as produced by [delineate()]) with reachIDs as the values
+#' @param Tp Pixel topology for the stream raster
+#' @param rid The focal reach ID
+#' @return A named2-column matrix, 'to' is the downstream reach (i.e., rid) and
+#' 'from' contains ids of the reach(es) upstream of rid, or NULL if there are none
 #' @keywords internal
-.reach_upstream <- function(Tp, rid) {
+.upstream_r = function(rid, stream, Tp) {
+	pids = which(values(stream) == rid)
+	Tp_r = Tp[pids, pids, drop=FALSE]
+	r_top = .headwater(Tp_r)
+	r_nb = .upstream(Tp, r_top)
+	if(length(r_nb) > 0) {
+		from_ids = stream[r_nb]
+		res = cbind(to = rid, from = from_ids)
+	} else {
+		res = NULL
+	}
+	res
+}
 
-	stop("update")
-	ids <- which(ws$data$reachID == rch)
-	reachAdj <- ws$adjacency[ids,ids, drop = FALSE]
-	mostUpstream <- ids[which(Matrix::rowSums(reachAdj) == 0)]
-	adjMatUp <- as.matrix(ws$adjacency[mostUpstream,])
-	upRch <- which(adjMatUp == 1)
-	if(length(upRch) > 0) {
-		upRch <- ws$data$reachID[upRch]
-		return(cbind(rch, upRch))
-	} else return(NULL)
+#' @keywords internal
+.headwater = function(Tx) {
+	## check for rowsums as well because we exclude nodes that are connected to nothing
+	which(colSums(Tx) == 0 & rowSums(Tx) != 0)
+}
+
+#' Simple topological functions
+#' @details upstream/downstream take a single node as input, and return the up- or downstream node.
+#' Outlets/headwaters analyzes the entire toplogy and finds nodes that have no downstream or upstream neighbours.
+#' @param Tx A (pixel or reach) topology
+#' @param i,j Focal node
+#' @return The id (corresponding to dims of Tx) of the desired node(s)
+#' @keywords internal
+.upstream = function(Tx, j) {
+	which(Tx[,j] != 0)
+}
+
+#' @keywords internal
+.downstream = function(Tx, i) {
+	which(Tx[,j] != 0)
 }
 
 
-
-
-#' Buid a topology for each pixel in a delineated stream
+#' Buid a topology for a delineated stream
 #' @param x A [raster::stack], such as one created by [delineate()], or specify layers separately with `drain` and `stream`.
 #' @param drainage Optional, ignored if `x` is provided; a drainage direction raster
 #' @param stream Optional, ignored if `x` is provided; a delineated stream raster, all non-stream cells must be `NA`
-#' @return A [Matrix::sparseMatrix] giving the pixel topology
+#' @details The topology is a square matrix showing immediate adjacency between pixels/reaches. Each row/column
+#' in the topology is a single pixel/reach. Zero entries indicate no adjacency between two nodes. A non-zero entry
+#' for row `i` column `j` indicates that `i` is upstream of `j`. The value in the entry is the length of the 
+#' upstream pixel/reach.
+#' @return A [Matrix::sparseMatrix] giving the pixel or reach topology
 #' @export
 pixel_topology = function(x, drainage, stream) {
 	if(!requireNamespace("Matrix"))

@@ -12,7 +12,7 @@ Before installing this package, you should install [GRASS GIS](https://grass.osg
 
 **Mac**: `watershed` can auto-detect [grass binary](http://grassmac.wikidot.com) installations (which are usually installed in `/Applications/`). Command-line installations may also work; try following the linux instructions.
 
-**Linux/Unix**: Install grass however you like. For auto-detection to work, make sure the grass binary (`grass74`, `grass76`, `grass78`) is in your `$PATH` and visible from within R; try `system2('grass76', args = c("--config", "path"))` to see if this is working, it should output the location of your grass installation. If you want a different version of grass, you can alias `grass78` to whatever binary you like, or see **Changing the default grass* below.
+**Linux/Unix**: Install grass however you like. For auto-detection to work, make sure the grass binary (`grass74`, `grass76`, `grass78`) is in your `$PATH` and visible from within R; try, e.g., `system2('grass76', args = c("--config", "path"))` to see if this is working, it should output the location of your grass installation. If you want a different version of grass, you can alias `grass78` to whatever binary you like, or see **Changing the default grass* below.
 
 ## Installing `watershed`.
 

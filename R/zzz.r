@@ -2,7 +2,7 @@
 	Sys.setenv("GRASS_VERBOSE"=0)
 	rgrass7::use_sp()
 
-	if(requireNamespace("parallel") & !grepl("[Ww]indows", Sys.info()['sysname'])) {
+	if(is.null(getOption("mc.cores")) && !grepl("[Ww]indows", Sys.info()['sysname'])) {
 		message("For faster performance of some fucntions on a machine with lots of RAM, you can set")
 		message("options(mc.cores = parallel::detectCores())")
 	}
