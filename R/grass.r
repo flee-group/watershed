@@ -24,14 +24,14 @@
 }
 
 #' Add a raster to grass
-#' @param x A [raster::raster] or [sp::SpatialPixelsDataFrame]
+#' @param x A [raster::raster] or [sp::SpatialGridDataFrame]
 #' @param name The name of the layer in grass
 #' @param flags Any flags to pass to [rgrass7::writeRAST]
 #' @param overwrite Should the file be overwritten if it exists
 #' @keywords internal
 .add_raster = function(x, name, flags, overwrite = TRUE) {
 	if("RasterLayer" %in% class(x))
-		x = .raster_to_spdf(x)
+		x = as(x, "SpatialGridDataFrame")
 	if(missing(flags))
 		flags = list()
 	if(overwrite)
@@ -84,25 +84,6 @@
 
 
 
-
-#' Produce a [sp::SpatialPixelsDataFrame] from a [raster::raster]
-#' @param x A [raster::raster] object
-#' @param complete.cases Boolean, if TRUE only complete (non-na) rows are returned
-#' @return A [sp::SpatialPixelsDataFrame]
-#' @keywords internal
-.raster_to_spdf = function(x, complete.cases=FALSE)
-{
-	coords = sp::coordinates(x)
-	gr = data.frame(cbind(coords, raster::values(x)))
-	if(complete.cases)
-		gr = gr[complete.cases(gr),]
-	sp::coordinates(gr) = c(1,2)
-	sp::proj4string(gr) = sp::proj4string(x)
-	sp::gridded(gr) = TRUE
-	return(gr)
-}
-
-
 #' Try to locate a user's GRASS GIS installation
 #'
 #' Locates a grass installation in common locations on Mac, Windows, and Linux. This is normally
@@ -149,7 +130,9 @@ find_grass = function() {
 #' @keywords internal
 .preferred_grass_version = function(x) {
 	gVersion = as.numeric(sub(".*(7)\\.?([0-9]).*(\\.app)?", "\\1\\2", x))
-	if(78 %in% gVersion) {
+
+	## grass78 preferred on R version 4 and above, otherwise 76
+	if(grepl('4', version['major']) && 78 %in% gVersion) {
 		res = x[gVersion == 78]
 	} else if(76 %in% gVersion) {
 		res = x[gVersion == 76]

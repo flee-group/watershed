@@ -7,7 +7,7 @@
 .add_raster(x, name, flags, overwrite = TRUE)
 }
 \arguments{
-\item{x}{A \link[raster:raster]{raster::raster} or \link[sp:SpatialGridDataFrame]{sp::SpatialPixelsDataFrame}}
+\item{x}{A \link[raster:raster]{raster::raster} or \link[sp:SpatialGridDataFrame]{sp::SpatialGridDataFrame}}
 
 \item{name}{The name of the layer in grass}
 

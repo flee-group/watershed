@@ -90,7 +90,7 @@ kamp = crop(kamp, catch)
 
 library(Matrix)
 kamp_topology = pixel_topology(kamp)
-kamp_reach_T = reach_topology(kamp, kamp_topology)
+# kamp_reach_T = reach_topology(kamp, kamp_topology)
 
 ```
 

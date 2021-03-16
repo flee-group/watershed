@@ -1,12 +1,12 @@
 Package: watershed
 Title: Tools for Watershed Delineation
-Version: 0.1.0.9000
+Version: 0.1.0.9001
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
            role = c("aut", "cre"),
            email = "mtalluto@gmail.com")
-Description: This is a simplified set of tools for deriving a river network from digital elevation data. The package relies on GRASS GIS (v. 7.4 or 7.6) to do the heavy lifting. An installation of GRASS and the rgrass7 package is required for watershed to function. Note that this is meant to be a simplified workflow for watershed delineation using only R code; for more options users can use rgrass7 to access GRASS GIS functions directly.
+Description: This is a simplified set of tools for deriving a river network from digital elevation data. The package relies on GRASS GIS (v. 7.4 to 7.8) to do the heavy lifting. An installation of GRASS and the rgrass7 package is required for watershed to function. Note that this is meant to be a simplified workflow for watershed delineation using only R code; for more options users can use rgrass7 to access GRASS GIS functions directly.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: en
