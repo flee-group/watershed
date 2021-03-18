@@ -13,9 +13,9 @@
 #' @return A [Matrix::sparseMatrix] giving the pixel or reach topology
 #' @examples
 #' \donttest{
-#'     data(ybbs_dem)
-#'     Tp = pixel_topology(ybbs_dem)
-#'     Tr = reach_topology(ybbs_dem, Tp)
+#'     data(kamp_dem)
+#'     Tp = pixel_topology(kamp_dem)
+#'     Tr = reach_topology(kamp_dem, Tp)
 #' }
 NULL
 
@@ -115,6 +115,13 @@ NULL
 	## check for rowsums as well because we exclude nodes that are connected to nothing
 	which(Matrix::colSums(Tx) == 0 & Matrix::rowSums(Tx) != 0)
 }
+
+#' @rdname upstream
+#' @keywords internal
+.outlet = function(Tx) {
+	which(Matrix::rowSums(Tx) == 0 & Matrix::colSums(Tx) != 0)
+}
+
 
 #' @rdname upstream
 #' @return For `.upstream_r`, A named2-column matrix, 'to' is the downstream reach (i.e., i) and

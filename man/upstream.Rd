@@ -5,6 +5,7 @@
 \alias{.upstream}
 \alias{.downstream}
 \alias{.headwater}
+\alias{.outlet}
 \alias{.upstream_r}
 \title{Simple topology analysis
 Simple functions for extracting information from river topologies}
@@ -14,6 +15,8 @@ Simple functions for extracting information from river topologies}
 .downstream(Tx, i)
 
 .headwater(Tx)
+
+.outlet(Tx)
 
 .upstream_r(i, stream, Tx)
 }

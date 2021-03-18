@@ -35,8 +35,8 @@ upstream pixel/reach.
 }
 \examples{
 \donttest{
-    data(ybbs_dem)
-    Tp = pixel_topology(ybbs_dem)
-    Tr = reach_topology(ybbs_dem, Tp)
+    data(kamp_dem)
+    Tp = pixel_topology(kamp_dem)
+    Tr = reach_topology(kamp_dem, Tp)
 }
 }

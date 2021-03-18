@@ -9,4 +9,7 @@ test_that("r.watershed Works", {
 	
 	## todo - test conditions
 	## todo - test correctness of results
+	## 
+	
+	expect_error(vectorize_stream(kamp_sm[['stream']]))
 })

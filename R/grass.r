@@ -41,9 +41,13 @@
 }
 
 
-#' Read and format rasters from a grass session
+#' @name read_rasters
+#' @rdname .read_rasters
+#' @title Read files from grass
+#' Read and format raster and vector layers from a grass session
 #' @param layers A vector of names of rasters to read
 #' @param file The file name to save the raster
+#' @param x A single vector layer name to read
 #' @keywords internal
 .read_rasters = function(layers, file) {
 	ras = sapply(layers, rgrass7::readRAST)
@@ -59,6 +63,12 @@
 	ras
 }
 
+#' @rdname .read_rasters
+#' @keywords internal
+.read_vector = function(x) {
+	v = rgrass7::readVECT(x)
+	sf::st_as_sf(v)
+}
 
 #' Clean up grass files
 #' @param raster Raster layers to remove, if missing, all will be removed, if NA, none will be removed
