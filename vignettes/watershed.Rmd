@@ -72,7 +72,7 @@ kamp = delineate(kamp_dem, outlet = NA)
 ## for this to work
 # kamp = delineate(kamp_dem, outlet = c(4704588, 2847762))
 plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
-plot(kamp$stream, col='blue', add = TRUE, legend = FALSE)
+plot(kamp$stream, col='blue', add = TRUE, legend = FALSE, maxpixels=ncell(kamp$stream))
 ```
 
 ## 3. Generating topologies
@@ -89,8 +89,8 @@ catch = trim(catch)
 kamp = crop(kamp, catch)
 
 library(Matrix)
-kamp_topology = pixel_topology(kamp)
-# kamp_reach_T = reach_topology(kamp, kamp_topology)
+kamp_Tp = pixel_topology(kamp)
+kamp_reach_Tr = reach_topology(kamp, kamp_Tp)
 
 ```
 

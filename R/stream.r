@@ -65,6 +65,10 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet) {
 		if(!missing(file))
 			res = raster::writeRaster(res, filname = file)
 	}
+	
+	## renumber reaches to go from 1:nreaches
+	res[['stream']] = raster::match(res[['stream']], 
+					raster::unique(res[['stream']]))
 
 	## clean up files
 	.clean_grass()

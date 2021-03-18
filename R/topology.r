@@ -61,26 +61,21 @@ reach_topology = function(x, Tp, stream) {
 	if(missing(stream))
 		stream = x[['stream']]
 
-	if(!is.null(getOption("mc.cores")) & getOption("mc.cores") > 1) {
+	if(!is.null(getOption("mc.cores")) && getOption("mc.cores") > 1) {
 		lapplfun = parallel::mclapply
 	} else {
 		lapplfun = lapply
 	}
 
-	rids = unique(raster::values(stream))
-	rids = rids[!is.na(rids)]
-	rids = sort(rids)
+	rids = raster::unique(stream)
 
-	if(!all.equal(rids, 1:length(rids)))
-		stop("ReachIDs not in strict ascending order, they must be renumbered")
+	if(!all(rids == 1:length(rids)))
+		stop("Reach IDs not in strict ascending order, they must be renumbered")
 
-	adj = lapplfun(rids, .upstream_r, stream = stream, Tp = Tp)
+	adj = lapplfun(rids, .upstream_r, stream = stream, Tx = Tp)
 	adj = do.call(rbind, adj)
-	stop("check the below; I think columns are reversed")
-	adjspMat = Matrix::sparseMatrix(adjMat[,1], adjMat[,2], dims=rep(max(ws$data$reachID), 2),
-									dimnames = list(reaches, reaches))
-	adjspMat
-
+	Matrix::sparseMatrix(adj[,2], adj[,1], dims=rep(max(rids), 2),
+									dimnames = list(rids, rids))
 }
 
 
@@ -111,14 +106,14 @@ NULL
 #' @rdname upstream
 #' @keywords internal
 .downstream = function(Tx, i) {
-	which(Tx[,j] != 0)
+	which(Tx[i,] != 0)
 }
 
 #' @rdname upstream
 #' @keywords internal
 .headwater = function(Tx) {
 	## check for rowsums as well because we exclude nodes that are connected to nothing
-	which(colSums(Tx) == 0 & rowSums(Tx) != 0)
+	which(Matrix::colSums(Tx) == 0 & Matrix::rowSums(Tx) != 0)
 }
 
 #' @rdname upstream
@@ -126,9 +121,9 @@ NULL
 #' 'from' contains ids of the reach(es) upstream of i; or NULL if there are none
 #' @keywords internal
 .upstream_r = function(i, stream, Tx) {
-	pids = which(values(stream) == i)
+	pids = which(raster::values(stream) == i)
 	Tp_r = Tx[pids, pids, drop=FALSE]
-	r_top = .headwater(Tp_r)
+	r_top = pids[.headwater(Tp_r)]
 	r_nb = .upstream(Tx, r_top)
 	if(length(r_nb) > 0) {
 		from_ids = stream[r_nb]
