@@ -83,12 +83,20 @@
 
 	if(!is.na(raster) && length(raster) > 0) {
 		sapply(raster, function(r) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="raster", name=r))
-		ws_env$rasters = list()
+		if(length(raster) == length(ws_env$rasters)) {
+			ws_env$rasters = list()
+		} else {
+			ws_env$rasters = ws_env$rasters[-which(ws_env$rasters %in% raster)]
+		}
 	}
 
 	if(!is.na(vector) && length(vector) > 0) {
 		sapply(vector, function(v) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="vector", name=v))
-		ws_env$vectors = list()
+		if(length(vector) == length(ws_env$vectors)) {
+			ws_env$vectors = list()
+		} else {
+			ws_env$vectors = ws_env$vectors[-which(ws_env$vectors %in% vector)]
+		}
 	}
 }
 

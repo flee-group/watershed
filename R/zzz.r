@@ -3,7 +3,7 @@
 	rgrass7::use_sp()
 
 	if(is.null(getOption("mc.cores")) && !grepl("[Ww]indows", Sys.info()['sysname'])) {
-		message("For faster performance of some fucntions on a machine with lots of RAM, you can set")
+		message("For faster performance of some functions on a machine with lots of RAM, you can set")
 		message("options(mc.cores = parallel::detectCores())")
 	}
 

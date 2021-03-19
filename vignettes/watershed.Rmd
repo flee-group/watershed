@@ -79,7 +79,7 @@ The default output from `delineate` is to assign each pixel to a reach, where a 
 * Setting `trim=TRUE` will remove small (by default, length < target_length/2) headwater reaches from the network
 
 ```{r reach_split, cache=TRUE}
-new_reaches = resize_reaches(kamp$stream, kamp_Tp, 800, trim=TRUE)
+new_reaches = resize_reaches(kamp$stream, kamp_Tp, 2000, trim=TRUE)
 new_v = vectorise_stream(new_reaches)
 new_Tp = pixel_topology(drainage = kamp$drainage, stream = new_reaches)
 new_Tr = reach_topology(Tp = new_Tp, stream = new_reaches)
@@ -94,7 +94,7 @@ pl + geom_histogram(aes(y=..density..), position="dodge", binwidth = 200, colour
 kamp[["stream"]] = new_reaches
 kv = new_v
 kamp_Tp = new_Tp
-kamp_Tp = new_Tr
+kamp_Tr = new_Tr
 rm(list=c("new_reaches", "new_v", "new_Tp", "new_Tr"))
 ```
 
@@ -102,6 +102,19 @@ rm(list=c("new_reaches", "new_v", "new_Tp", "new_Tr"))
 ## Finer-scale control
 
 ## Computing catchment area
+
+`watershed` can compute catchment area for you at any set of points in the watershed; this will yield the total area draining into a given point. Note that this can take a very long time for large areas. Here, we will compute the catchment area per reach. Note; this computation is fairly heavy. Therefore, I provide the code to run this, but it is not actually executed in the vignette. Rather, we load a pre-computed dataset.
+
+```{r catchment, cache=TRUE}
+CA = catchment(kamp, type = 'reach', Tp = kamp_Tp)
+rids = unique(kamp$stream)
+## not all reaches survive the transition to vector, and the orders are not the same, so we match by rid
+kv$log_catchment_area = log(CA[kv$reach_id])
+plot(kv['log_catchment_area'])
+```
+
+
+
 
 ## Discharge and hydraulic geometry
 

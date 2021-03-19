@@ -58,18 +58,14 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet=NA, reac
 
 	## Clip to a single network
 	if(length(outlet) == 1 && is.na(outlet))
-		outlet = raster::coordinates(res)[which.max(abs(raster::values(res$accum))),]
+		outlet = matrix(raster::coordinates(res)[which.max(abs(raster::values(res$accum))),], ncol=2)
+	catch = catchment(res, type = "points", y = outlet, area = FALSE)
 
-	rgrass7::execGRASS("r.water.outlet", flags=c("overwrite", "quiet"), input=drainage, output = "catchment",
-					   coordinates = outlet)
-	ws_env$rasters = c(ws_env$rasters, "catchment")
-	catchment = .read_rasters("catchment")
-	catchment[catchment == 0] = NA
-	catchment = raster::trim(catchment)
-	res = raster::crop(res, catchment)
-	stream_clip = raster::mask(res$stream, catchment)
+	catch = raster::trim(catch)
+	res = raster::crop(res, catch)
+	stream_clip = raster::mask(res$stream, catch)
 	res = raster::dropLayer(res, which(names(res) == stream))
-	res = raster::addLayer(res, stream = stream_clip, catchment = catchment)
+	res = raster::addLayer(res, stream = stream_clip, catchment = catch)
 
 	## renumber reaches to go from 1:nreaches, make sure streams are integers
 	res[['stream']] = raster::match(res[['stream']],
