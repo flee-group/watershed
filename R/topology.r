@@ -14,8 +14,9 @@
 #' @examples
 #' \donttest{
 #'     data(kamp_dem)
-#'     Tp = pixel_topology(kamp_dem)
-#'     Tr = reach_topology(kamp_dem, Tp)
+#'     kamp = delineate(kamp_dem, outlet = NA)
+#'     Tp = pixel_topology(kamp)
+#'     Tr = reach_topology(kamp, Tp)
 #' }
 NULL
 
@@ -44,7 +45,7 @@ pixel_topology = function(x, drainage, stream) {
 	xy = .flowto(vals, xmax = nc, ymax = nr)
 	# res = xy[,c('from_id', 'drainage')]
 	# colnames(res)[1] = 'id'
-	r = raster::res(x)
+	r = raster::res(stream)
 	len = ifelse(xy[, 'drainage'] %in% c(1,3,5,7), sqrt(r[1]^2 + r[2]^2),
 				 ifelse(xy[, 'drainage'] %in% c(2, 6), r[2], r[1]))
 	res = Matrix::sparseMatrix(i = xy[,'from_id'], j = xy[,'to_id'], dims=rep(raster::ncell(drainage), 2), x = len)
@@ -55,6 +56,9 @@ pixel_topology = function(x, drainage, stream) {
 #' @rdname topologies
 #' @export
 reach_topology = function(x, Tp, stream) {
+	if(missing(Tp))
+		stop("A topology is required for this function")
+
 	if(!requireNamespace("Matrix"))
 		stop("This functionality requires the Matrix package; please install it with install.packages('Matrix') and try again.")
 
@@ -74,12 +78,48 @@ reach_topology = function(x, Tp, stream) {
 
 	adj = lapplfun(rids, .upstream_r, stream = stream, Tx = Tp)
 	adj = do.call(rbind, adj)
-	Matrix::sparseMatrix(adj[,2], adj[,1], dims=rep(max(rids), 2),
-									dimnames = list(rids, rids))
+
+	## compute the length of each reach as the sum of all pixels
+	pids = lapplfun(rids, extract_reach, stream=stream, Tp = Tp)
+	lens = unlist(lapplfun(pids, function(x) sum(Tp[x,,drop=FALSE])))
+
+	# add a virtual node for the outlet to flow to
+	outlet = which(!(rids %in% adj[,'from']))
+	adj = rbind(adj, c(max(rids)+1, outlet))
+	rids = c(rids, max(rids)+1)
+
+	Matrix::sparseMatrix(adj[,'from'], adj[,'to'], dims=rep(max(rids), 2),
+									dimnames = list(rids, rids), x = lens)
 }
 
 
 
+#' Find pixel IDs matching reach i
+#' @param i Reach number to extract
+#' @param stream Raster stream layer
+#' @param Tp optional Topology, only needed for sorting
+#' @param sorted Logical, should the ids be returned sorted from upstream to down?
+#' @return A vector of pixel ids
+#' #' @examples
+#' \donttest{
+#'     data(kamp_dem)
+#'     kamp = delineate(kamp_dem, outlet = NA)
+#'     Tp = pixel_topology(kamp)
+#'     extract_reach(5, kamp$stream, Tp)
+#' }
+#' @export
+extract_reach = function(i, stream, Tp, sorted = FALSE) {
+	pids = which(raster::values(stream) == i)
+	if(sorted) {
+		pid_s = numeric(length(pids))
+		Tp_r = Tp[pids, pids, drop=FALSE]
+		pid_s[1] = .headwater(Tp_r)
+		for(i in 2:length(pid_s))
+			pid_s[i] = .downstream(Tp_r, pid_s[i-1])
+		pids = pids[pid_s]
+	}
+	pids
+}
 
 
 
@@ -112,8 +152,7 @@ NULL
 #' @rdname upstream
 #' @keywords internal
 .headwater = function(Tx) {
-	## check for rowsums as well because we exclude nodes that are connected to nothing
-	which(Matrix::colSums(Tx) == 0 & Matrix::rowSums(Tx) != 0)
+	which(.is_headwater(Tx))
 }
 
 #' @rdname upstream
@@ -122,13 +161,20 @@ NULL
 	which(Matrix::rowSums(Tx) == 0 & Matrix::colSums(Tx) != 0)
 }
 
+#' @rdname upstream
+#' @keywords internal
+.is_headwater = function(Tx) {
+	## check for rowsums as well because we exclude nodes that are connected to nothing
+	Matrix::colSums(Tx) == 0 & Matrix::rowSums(Tx) != 0
+}
+
 
 #' @rdname upstream
 #' @return For `.upstream_r`, A named2-column matrix, 'to' is the downstream reach (i.e., i) and
 #' 'from' contains ids of the reach(es) upstream of i; or NULL if there are none
 #' @keywords internal
 .upstream_r = function(i, stream, Tx) {
-	pids = which(raster::values(stream) == i)
+	pids = extract_reach(i, stream)
 	Tp_r = Tx[pids, pids, drop=FALSE]
 	r_top = pids[.headwater(Tp_r)]
 	r_nb = .upstream(Tx, r_top)

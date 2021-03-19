@@ -4,20 +4,18 @@
 \alias{resize_reaches}
 \title{Resize reaches from a delineated stream}
 \usage{
-resize_reaches(x, len, min_len = 0.5 * len, trim = TRUE, Tp, Tr)
+resize_reaches(x, Tp, len, min_len = 0.5 * len, trim = TRUE)
 }
 \arguments{
 \item{x}{A \link{raster} stream map, such as one created by \code{\link[=delineate]{delineate()}}.}
+
+\item{Tp}{A pixel topology}
 
 \item{len}{The target length of resized reaches (in map units)}
 
 \item{min_len}{How small is the smallest acceptable reach?}
 
 \item{trim}{Logical; remove headwater reaches smaller than min_length?}
-
-\item{Tp}{Optional; a pixel topology; will be computed if missing}
-
-\item{Tr}{Optional; a reach topology; will be computed if missing}
 }
 \value{
 A raster similar to \code{x} with reaches resized
@@ -29,6 +27,7 @@ Resize reaches from a delineated stream
 \donttest{
     data(kamp_dem)
     x = delineate(kamp_dem)
-    x[['stream']] = resize_reaches(x[['stream']], 1000, 600)
+    Tp = pixel_topology(x)
+    x[['stream']] = resize_reaches(x[['stream']], Tp, 1000, 600)
 }
 }

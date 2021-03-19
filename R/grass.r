@@ -42,7 +42,7 @@
 
 
 #' @name read_rasters
-#' @rdname .read_rasters
+#' @rdname read_rasters
 #' @title Read files from grass
 #' Read and format raster and vector layers from a grass session
 #' @param layers A vector of names of rasters to read
@@ -63,7 +63,7 @@
 	ras
 }
 
-#' @rdname .read_rasters
+#' @rdname read_rasters
 #' @keywords internal
 .read_vector = function(x) {
 	v = rgrass7::readVECT(x)

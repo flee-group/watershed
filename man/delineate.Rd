@@ -4,7 +4,15 @@
 \alias{delineate}
 \title{Delineate streams from an elevation model}
 \usage{
-delineate(dem, threshold = 1e+06, pretty = FALSE, file, outlet)
+delineate(
+  dem,
+  threshold = 1e+06,
+  pretty = FALSE,
+  file,
+  outlet = NA,
+  reach_len,
+  ...
+)
 }
 \arguments{
 \item{dem}{A \link[raster:raster]{raster::raster}; a digital elevation model.}
@@ -16,6 +24,10 @@ delineate(dem, threshold = 1e+06, pretty = FALSE, file, outlet)
 \item{file}{The file name of the raster to be returned, see \code{details}.}
 
 \item{outlet}{The location of the outlet of the target stream, see \code{details}.}
+
+\item{reach_len}{Optional; if provided, reaches will be resized to meet this target length}
+
+\item{...}{If \code{reach_len} is specified, additional parameters to be passed to \code{\link[=resize_reaches]{resize_reaches()}}}
 }
 \value{
 A \code{\link[raster:stack]{raster::stack()}}, containing the drainage map, the flow accumulation map, and the delineated streams.
@@ -29,8 +41,8 @@ This is a wrapper for \href{https://grass.osgeo.org/grass76/manuals/r.watershed.
 The threshold parameter controls the level of detail in the delineated streams. Higher thresholds result in faster
 computation and fewer streams in the output. For finer control, see \code{\link[=extract_stream]{extract_stream()}}.
 
-If the \code{outlet} parameter is missing (the default), then all streams in the DEM will be returned. If \code{outlet} is \code{NA},
-then the largest stream in the area will be set as the outlet, and only streams in that watershed will be used.
+IIf \code{outlet} is \code{NA} (the default), then the largest stream in the area will be set as the outlet,
+and only streams in that watershed will be used.
 If a smaller stream is the focus, then outlet can be a pair of x-y coordinates which will determine the farthest
 downstream point to use.
 
@@ -39,4 +51,10 @@ Streams can be converted to a vector file, see \code{\link[=stream_vector]{strea
 It is recommended to specify the \code{file} parameter (including the extension to specify
 file format; e.g., .tif, .grd). If not specified, a temp file will be created and will be
 lost at the end of the R session.
+}
+\examples{
+\donttest{
+    data(kamp_dem)
+    x = delineate(kamp_dem)
+}
 }

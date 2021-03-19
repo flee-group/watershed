@@ -36,51 +36,24 @@ Many workflows advise either using a "burned-in" DEM or a "filled" DEM to avoid 
 
 The pared-down workflow offered by `watershed` provides a relatively quick way to go from a dem to a stream map. We will make a first-draft map using the `kamp_dem` dataset provided by this package, for the Kamp river in Austria. The DEM is a `raster`, so we load this package as well.
 
-```{r dem}
+The `delineate()` function is the main workhorse here. The resulting raster stack contains 3 layers: `accum` is the flow accumulation, `drainage` is the drainage direction, and `stream` is the stream map. We also produce a vector layer of the stream map for plotting. Some notes about our use of `delineate` here:
+
+* We do not set the `threshold` parameter, which is the minimum catchment area before something is marked as a stream. The default of 1e6 $m^2$ (10 $km^2$) works well; increasing the threshold will result in more streams, decreasing it will take longer and make more streams.
+* We restrict the output to a single river basin with `outlet = NA` (this chooses the largest basin). To select a different basin, we could instead use `outlet = c(4704588, 2847762)`; the coordinates must be exactly on the stream for this to work.
+* Because `outlet` is provided, the output rasters also have their extent reduced to the catchment of our stream.
+
+```{r delineate, cache = TRUE}
 library(raster)
 library(sf)
 data(kamp_dem)
-plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
-```
-
-The `delineate()` function is the main workhorse here. The resulting raster stack contains 3 layers: `accum` is the flow accumulation, `drainage` is the drainage direction, and `stream` is the stream map. We also produce a vector layer of the stream map for plotting.
-
-```{r delineate, cache = TRUE}
-kamp = delineate(kamp_dem)
-kv = vectorise_stream(kamp[["stream"]])
-plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
-plot(kv, col='blue', add = TRUE)
-```
-
-The defaults produce pretty good results in this case. Perhaps we know from on-the-ground work, or aerial photo inspection, that there are more streams that what is produced here. We can improve this with the `threshold` parameter, which sets the default minimum basin size. This defaults to 1e6 m^2, or 1 km^2. Here we reduce it by half; note that this gives us a warning about possible long computation times; it's not such a problem here, because the Ybbs is a relatively small area, but with large DEMs this can make the computation very slow.
-
-```{r delineate2, cache = TRUE}
-kamp2 = delineate(kamp_dem, threshold = 0.5e5)
-plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
-kv = vectorise_stream(kamp2[["stream"]])
-plot(kv, col='blue', add = TRUE)
-
-rm(kamp2)
-```
-
-This produces a lot of streams! From our fieldwork in the Kamp, we know that the default produces a pretty good network, so we will keep the first one.
-
-## 2. Selecting a single basin
-
-We would like to restrict our stream map to a single catchment. `delineate` offers this option; here we set `outlet = NA`, which will use the largest stream (with a catchment completely contained within the DEM) as the outlet for the desired basin. Alternatively, we could zoom in on the layer and choose the x-y coordinates of the outlet we wanted to use, and provide these as a vector in outlet.
-
-
-```{r crop, cache = TRUE}
 kamp = delineate(kamp_dem, outlet = NA)
-## alternative - note that the coordinates must be exactly on the delineated stream
-## for this to work
-# kamp = delineate(kamp_dem, outlet = c(4704588, 2847762))
 kv = vectorise_stream(kamp[["stream"]])
 plot(kamp_dem, col=terrain.colors(20), axes = FALSE)
-plot(kv, col='blue', add = TRUE)
+plot(st_geometry(kv), col='blue', add = TRUE)
 ```
 
-## 3. Generating topologies
+
+## 2. Generating topologies
 
 Many later features require a topology; this simply a square matrix `T`, with one row/column for each pixel or reach in the river network. `T[i,j] == 1` indicates that pixel/reach `i` is directly upstream of pixel/reach `j` (in other words, `j` gets water from `i` without that water flowing through any other intermediate pixels/reaches).
 
@@ -89,10 +62,6 @@ Generating the topology can take some time for large and/or complex river networ
 Our first step is to crop the rasters from the previous steps to only include our catchment of interest. Then we load the Matrix package to handle the `sparseMatrix` returned by `pixel_topology`. Finally, we create two topologies; one for the pixels, and one for reaches.
 
 ```{r topol, cache=TRUE, warning=TRUE}
-catch = kamp$catchment
-catch = trim(catch)
-kamp = crop(kamp, catch)
-
 library(Matrix)
 kamp_Tp = pixel_topology(kamp)
 kamp_Tr = reach_topology(kamp, kamp_Tp)
@@ -101,17 +70,32 @@ kamp_Tr = reach_topology(kamp, kamp_Tp)
 
 Note the warning, indicating that there is a confluence where more than 2 streams flow into the same pixel. This is not a serious problem, so we will ignore it for now.
 
+## 3. Producing smaller reaches
 
-## 4. Revising the delineation
+The default output from `delineate` is to assign each pixel to a reach, where a reach is a stretch of river between confluences. For many applications, it is useful to split these into smaller sections. `watershed` includes a function to split reaches into fixed (approximately) equal-length sections. 
 
-
-## 4. Producing smaller reaches
-
-The default output from `delineate` is to assign each pixel to a reach, where a reach is a stretch of river between confluences. For many applications, it is useful to split these into smaller sections. `watershed` includes a function to split reaches into fixed (approximately) equal-length sections. Unequal-length reaches is a feature that may be added if we receive enough requests.
+* Note that resizing the reaches invalidates the old topologies, and a new ones must be made. 
+* Alternatively, we could define the reach lengths directly in `delineate` by setting the `reach_len` parameter.
+* Setting `trim=TRUE` will remove small (by default, length < target_length/2) headwater reaches from the network
 
 ```{r reach_split, cache=TRUE}
+new_reaches = resize_reaches(kamp$stream, kamp_Tp, 800, trim=TRUE)
+new_v = vectorise_stream(new_reaches)
+new_Tp = pixel_topology(drainage = kamp$drainage, stream = new_reaches)
+new_Tr = reach_topology(Tp = new_Tp, stream = new_reaches)
 
-
+## how many reaches, and what range of lengths?
+c(nrow(kamp_Tr), nrow(new_Tr))
+library(ggplot2)
+pl = ggplot(data.frame(len = c(kamp_Tr@x, new_Tr@x), 
+                  reach = c(rep("old", length(kamp_Tr@x)), rep("new", length(new_Tr@x)))), aes(x=len, fill=reach))
+pl + geom_histogram(aes(y=..density..), position="dodge", binwidth = 200, colour="gray") + theme_minimal() + xlab("Reach length (m)")
+## update the raster stack to use the new streams
+kamp[["stream"]] = new_reaches
+kv = new_v
+kamp_Tp = new_Tp
+kamp_Tp = new_Tr
+rm(list=c("new_reaches", "new_v", "new_Tp", "new_Tr"))
 ```
 
 
