@@ -99,23 +99,25 @@ rm(list=c("new_reaches", "new_v", "new_Tp", "new_Tr"))
 ```
 
 
-## Finer-scale control
 
-## Computing catchment area
+## 4. Computing catchment area
 
-`watershed` can compute catchment area for you at any set of points in the watershed; this will yield the total area draining into a given point. Note that this can take a very long time for large areas. Here, we will compute the catchment area per reach. Note; this computation is fairly heavy. Therefore, I provide the code to run this, but it is not actually executed in the vignette. Rather, we load a pre-computed dataset.
+`watershed` can compute catchment area for you at any set of points in the watershed; this will yield the total area draining into a given point. Note that this can take a very long time for large areas. Here, we will compute the catchment area per reach. 
 
 ```{r catchment, cache=TRUE}
 CA = catchment(kamp, type = 'reach', Tp = kamp_Tp)
 rids = unique(kamp$stream)
 ## not all reaches survive the transition to vector, and the orders are not the same, so we match by rid
+## We also convert to log scale to make the map more readable
 kv$log_catchment_area = log(CA[kv$reach_id])
 plot(kv['log_catchment_area'])
 ```
 
 
-
-
 ## Discharge and hydraulic geometry
+
+`watershed` includes a simple function for estimating discharge and hyrdaulic geometry at all points/reaches in the stream given. See `?hydraulic_scaling` for details and references on the scaling used.
+
+We load the dataset `kamp_q` for observations of discharge. We'll use the largest as the basis of the scaling.
 
 ## My network doesn't match aerial photos!

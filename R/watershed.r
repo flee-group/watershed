@@ -11,7 +11,8 @@
 #' * [foo()] A function for doing foo
 #'
 #' @section Datasets:
-#' * [ybbs_dem] An example digital elevation model for the Ybbs catchment in Austria
+#' * [kamp_dem] An example digital elevation model for the Kamp river in Austria
+#' * [kamp_q] Measured discharge in the Kamp river
 #'
 #' @docType package
 #' @name watershed_package
@@ -25,3 +26,12 @@ NULL
 #'   \item{value}{Elevation of each pixel, in m}
 #' }
 "kamp_dem"
+
+
+#' Measured discharge in the Kamp river
+#'
+#' @format A simple features (`sf`) point dataset
+#' \describe{
+#'   \item{discharge}{Discharge in m^3/s}
+#' }
+"kamp_q"

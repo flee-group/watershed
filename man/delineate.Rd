@@ -41,7 +41,7 @@ This is a wrapper for \href{https://grass.osgeo.org/grass76/manuals/r.watershed.
 The threshold parameter controls the level of detail in the delineated streams. Higher thresholds result in faster
 computation and fewer streams in the output. For finer control, see \code{\link[=extract_stream]{extract_stream()}}.
 
-IIf \code{outlet} is \code{NA} (the default), then the largest stream in the area will be set as the outlet,
+If \code{outlet} is \code{NA} (the default), then the largest stream in the area will be set as the outlet,
 and only streams in that watershed will be used.
 If a smaller stream is the focus, then outlet can be a pair of x-y coordinates which will determine the farthest
 downstream point to use.

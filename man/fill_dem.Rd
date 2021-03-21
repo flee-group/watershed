@@ -24,3 +24,9 @@ It is recommended to specify the \code{file} parameter (including the extension 
 file format; e.g., .tif, .grd). If not specified, a temp file will be created and will be
 lost at the end of the R session.
 }
+\examples{
+\donttest {
+    data(kamp_dem)
+    kamp_fill = fill_dem(kamp_dem)
+}
+}

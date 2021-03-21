@@ -110,7 +110,7 @@ reach_topology = function(x, Tp, stream) {
 #' @export
 extract_reach = function(i, stream, Tp, sorted = FALSE) {
 	pids = which(raster::values(stream) == i)
-	if(sorted) {
+	if(sorted && length(pids) > 1) {
 		pid_s = numeric(length(pids))
 		Tp_r = Tp[pids, pids, drop=FALSE]
 		pid_s[1] = .headwater(Tp_r)
@@ -120,7 +120,6 @@ extract_reach = function(i, stream, Tp, sorted = FALSE) {
 	}
 	pids
 }
-
 
 
 
@@ -158,14 +157,31 @@ NULL
 #' @rdname upstream
 #' @keywords internal
 .outlet = function(Tx) {
-	which(Matrix::rowSums(Tx) == 0 & Matrix::colSums(Tx) != 0)
+	which(.is_outlet(Tx))
 }
 
 #' @rdname upstream
 #' @keywords internal
 .is_headwater = function(Tx) {
-	## check for rowsums as well because we exclude nodes that are connected to nothing
-	Matrix::colSums(Tx) == 0 & Matrix::rowSums(Tx) != 0
+	## single-member topologies are always both headwaters and outlets
+	if(all(dim(Tx) == c(1,1))) {
+		return(TRUE)
+	} else {
+		## check for rowsums as well because we exclude nodes that are connected to nothing
+		(Matrix::colSums(Tx) == 0 & Matrix::rowSums(Tx) != 0)
+	}
+}
+
+#' @rdname upstream
+#' @keywords internal
+.is_outlet = function(Tx) {
+	## single-member topologies are always both headwaters and outlets
+	if(all(dim(Tx) == c(1,1))) {
+		return(TRUE)
+	} else {
+		## check for colsums as well because we exclude nodes that are connected to nothing
+		(Matrix::colSums(Tx) != 0 & Matrix::rowSums(Tx) == 0)
+	}
 }
 
 

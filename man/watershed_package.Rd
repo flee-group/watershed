@@ -21,7 +21,8 @@ users can use rgrass7 to access GRASS GIS functions directly.
 \section{Datasets}{
 
 \itemize{
-\item \link{ybbs_dem} An example digital elevation model for the Ybbs catchment in Austria
+\item \link{kamp_dem} An example digital elevation model for the Kamp river in Austria
+\item \link{kamp_q} Measured discharge in the Kamp river
 }
 }
 

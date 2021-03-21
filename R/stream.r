@@ -11,7 +11,7 @@
 #' The threshold parameter controls the level of detail in the delineated streams. Higher thresholds result in faster
 #' computation and fewer streams in the output. For finer control, see [extract_stream()].
 #'
-#' IIf `outlet` is `NA` (the default), then the largest stream in the area will be set as the outlet,
+#' If `outlet` is `NA` (the default), then the largest stream in the area will be set as the outlet,
 #' and only streams in that watershed will be used.
 #' If a smaller stream is the focus, then outlet can be a pair of x-y coordinates which will determine the farthest
 #' downstream point to use.
@@ -28,7 +28,7 @@
 #'     x = delineate(kamp_dem)
 #' }
 #' @export
-delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet=NA, reach_len, ...) {
+delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, reach_len, ...) {
 	cell_area = prod(raster::res(dem))
 	threshold_cell = floor(threshold/cell_area)
 
@@ -116,7 +116,6 @@ vectorise_stream = function(x) {
 	ws_env$vectors = c(ws_env$vectors, vectname)
 	vect = .read_vector(vectname)
 
-	## todo: v.clean
 	.clean_grass()
 	vect
 }
@@ -145,6 +144,9 @@ resize_reaches = function(x, Tp, len, min_len = 0.5 * len, trim = TRUE) {
 	}
 
 	ids = raster::unique(x)
+	if(!is.vector(ids) || !identical(ids, as.integer(ids)))
+		stop("x must be a single-layer raster stream delineation with integer reach ids as values")
+
 	pids = lapplfun(ids, extract_reach, stream=x, Tp = Tp, sorted = TRUE)
 	new_reaches = unlist(lapplfun(pids, .resize_r, Tp = Tp, trim = trim, len = len, min_len = min_len),
 						 recursive = FALSE)
@@ -165,6 +167,9 @@ resize_reaches = function(x, Tp, len, min_len = 0.5 * len, trim = TRUE) {
 #' @return A list of vectors, each vector is a single new reach.
 #' @keywords internal
 .resize_r = function(ids, Tp, trim, len, min_len) {
+
+	if(length(ids) == 1)
+		return(list(ids))
 
 	## only trim headwater reaches
 	trim = trim && .is_headwater(Tp)[ids[1]]
