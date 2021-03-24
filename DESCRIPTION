@@ -1,6 +1,6 @@
 Package: watershed
 Title: Tools for Watershed Delineation
-Version: 0.3.0.9003
+Version: 0.3.1
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",

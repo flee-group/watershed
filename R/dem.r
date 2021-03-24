@@ -9,7 +9,7 @@
 #' lost at the end of the R session.
 #' @return A filled DEM raster
 #' @examples
-#' \donttest {
+#' \donttest{
 #'     data(kamp_dem)
 #'     kamp_fill = fill_dem(kamp_dem)
 #' }

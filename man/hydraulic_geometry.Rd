@@ -44,7 +44,7 @@ adjusting the intercept parameter \code{b} so that the calibration point falls o
 }
 }
 \examples{
-\donttest {
+\donttest{
     library(sf)
     data(kamp_q)
     data(kamp_dem)

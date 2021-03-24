@@ -25,7 +25,7 @@ file format; e.g., .tif, .grd). If not specified, a temp file will be created an
 lost at the end of the R session.
 }
 \examples{
-\donttest {
+\donttest{
     data(kamp_dem)
     kamp_fill = fill_dem(kamp_dem)
 }

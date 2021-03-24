@@ -19,10 +19,6 @@ knitr::opts_chunk$set(fig.width=5.5, fig.height=5.5, collapse = TRUE, comment = 
 par(mar = c(0,0,0,0))
 ```
 
-```{r setup}
-library(watershed)
-```
-
 
 ## 0. Preparing the installation
 
@@ -42,7 +38,8 @@ The `delineate()` function is the main workhorse here. The resulting raster stac
 * We restrict the output to a single river basin with `outlet = NA` (this chooses the largest basin). To select a different basin, we could instead use `outlet = c(4704588, 2847762)`; the coordinates must be exactly on the stream for this to work.
 * Because `outlet` is provided, the output rasters also have their extent reduced to the catchment of our stream.
 
-```{r delineate, cache = TRUE}
+```{r delineate, cache = TRUE, warning=FALSE}
+library(watershed)
 library(raster)
 library(sf)
 data(kamp_dem)
@@ -78,7 +75,7 @@ The default output from `delineate` is to assign each pixel to a reach, where a 
 * Alternatively, we could define the reach lengths directly in `delineate` by setting the `reach_len` parameter.
 * Setting `trim=TRUE` will remove small (by default, length < target_length/2) headwater reaches from the network
 
-```{r reach_split, cache=TRUE}
+```{r reach_split, cache=TRUE, warning=FALSE}
 new_reaches = resize_reaches(kamp$stream, kamp_Tp, 2000, trim=TRUE)
 new_v = vectorise_stream(new_reaches)
 new_Tp = pixel_topology(drainage = kamp$drainage, stream = new_reaches)
@@ -119,15 +116,15 @@ plot(kv['log_catchment_area'])
 
 `watershed` includes a simple function for estimating discharge and hyrdaulic geometry at all points/reaches in the stream given. See `?hydraulic_scaling` for details and references on the scaling used.
 
-We load the dataset `kamp_q` for observations of discharge. We first need to make sure the points are exactly on the stream, then compute the catchment area for each point. Finally, we can then use the reach-level catchment areas to compute discharge and geometry for every reach in the watershed.
+We load the dataset `kamp_q` for observations of discharge. We first need to make sure the points are exactly on the stream, then compute the catchment area for each point. We set units using the `units` package to make sure unit conversions in the scaling equations are handled correctly. Finally, we can then use the reach-level catchment areas to compute discharge and geometry for every reach in the watershed.
 
 ```{r geometry}
 library(units)
 data(kamp_q)
 kamp_q = st_snap(kamp_q, kv, tolerance = 200)
 kamp_q$catch_area = catchment(kamp, type = "points", y = st_coordinates(kamp_q))
-hydraulic_geometry(kamp_q$catch_area, kamp_q$discharge, kv$catch_area)
-
+h <- hydraulic_geometry(set_units(kamp_q$catch_area, "m^2"), kamp_q$discharge, set_units(kv$catch_area, "m^2"))
+head(h)
 ```
 
 

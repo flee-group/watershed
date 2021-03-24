@@ -26,7 +26,7 @@
 #' 		geometry in streams and small rivers. *Limnology and Oceanography: Fluids and
 #' 		Environments*. **2**:41-53.
 #' @examples
-#' \donttest {
+#' \donttest{
 #'     library(sf)
 #'     data(kamp_q)
 #'     data(kamp_dem)

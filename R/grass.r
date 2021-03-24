@@ -66,7 +66,7 @@
 #' @rdname read_rasters
 #' @keywords internal
 .read_vector = function(x) {
-	v = rgrass7::readVECT(x)
+	d <- capture.output(v <- rgrass7::readVECT(x)) ## this function is quite noisy
 	sf::st_as_sf(v)
 }
 
@@ -81,7 +81,15 @@
 	if(missing(vector))
 		vector = ws_env$vectors
 
+	# sometimes layers get added twice
+	raster = unique(raster)
+	vector = unique(vector)
+
 	if(!is.na(raster) && length(raster) > 0) {
+		# for(r in raster) {
+		# 	cat(r, "\n")
+		# 	rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="raster", name=r)
+		# }
 		sapply(raster, function(r) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="raster", name=r))
 		if(length(raster) == length(ws_env$rasters)) {
 			ws_env$rasters = list()
