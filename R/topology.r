@@ -8,8 +8,9 @@
 #' @param Tp Topology for pixels in the network, e.g., the output from [pixel_topology()].
 #' @details The topology is a square matrix showing immediate adjacency between pixels/reaches. Each row/column
 #' in the topology is a single pixel/reach. Zero entries indicate no adjacency between two nodes. A non-zero entry
-#' for row `i` column `j` indicates that `i` is upstream of `j`. The value in the entry is the length of the
-#' upstream pixel/reach.
+#' for row `i` column `j` indicates that `i` is upstream of `j`. The value in the entry is the reaction length of the
+#' upstream pixel/reach; this is the midpoint to midpoint distance from i to j. The actual length of each node is stored in the
+#' `length` attribute; thus `Tp[i,j] == sum(attr(Tp, "length")[c(i,j)])/2`
 #' @return A [Matrix::sparseMatrix] giving the pixel or reach topology
 #' @examples
 #' \donttest{
@@ -17,6 +18,7 @@
 #'     kamp = delineate(kamp_dem, outlet = NA)
 #'     Tp = pixel_topology(kamp)
 #'     Tr = reach_topology(kamp, Tp)
+#'
 #' }
 NULL
 
@@ -42,13 +44,18 @@ pixel_topology = function(x, drainage, stream) {
 
 	vals = raster::values(coords)
 	vals = vals[!is.na(vals[,1]), ]
-	xy = .flowto(vals, xmax = nc, ymax = nr)
-	# res = xy[,c('from_id', 'drainage')]
-	# colnames(res)[1] = 'id'
+
+	## compute the length of each pixel
 	r = raster::res(stream)
-	len = ifelse(xy[, 'drainage'] %in% c(1,3,5,7), sqrt(r[1]^2 + r[2]^2),
-				 ifelse(xy[, 'drainage'] %in% c(2, 6), r[2], r[1]))
-	res = Matrix::sparseMatrix(i = xy[,'from_id'], j = xy[,'to_id'], dims=rep(raster::ncell(drainage), 2), x = len)
+	vals = cbind(vals, len = ifelse(vals[, 'drainage'] %in% c(1,3,5,7), sqrt(r[1]^2 + r[2]^2),
+									ifelse(vals[, 'drainage'] %in% c(2, 6), r[2], r[1])))
+	xy = .flowto(vals, xmax = nc, ymax = nr)
+
+	## this is the reaction length of each connection, the midpoint-midpoint distance
+	p_len = (vals[match(xy[,'from_id'], vals[,'id']), 'len'] + vals[match(xy[,'to_id'], vals[,'id']), 'len'])/2
+
+	res = Matrix::sparseMatrix(i = xy[,'from_id'], j = xy[,'to_id'], dims=rep(raster::ncell(drainage), 2), x = p_len)
+	attr(res, "length") = vals[,'len']
 	.check_topology(res, warn = TRUE)
 	res
 }
@@ -83,13 +90,14 @@ reach_topology = function(x, Tp, stream) {
 	pids = lapplfun(rids, extract_reach, stream=stream, Tp = Tp)
 	lens = unlist(lapplfun(pids, function(x) sum(Tp[x,,drop=FALSE])))
 
-	# add a virtual node for the outlet to flow to
-	outlet = which(!(rids %in% adj[,'from']))
-	adj = rbind(adj, c(max(rids)+1, outlet))
-	rids = c(rids, max(rids)+1)
+	## the reaction length is the midpoint to midpoint distance for each reach
+	## actual reach lengths are saved in an attribute
+	r_len = (lens[adj[,1]] + lens[adj[,2]])/2
 
-	Matrix::sparseMatrix(adj[,'from'], adj[,'to'], dims=rep(max(rids), 2),
-									dimnames = list(rids, rids), x = lens)
+	res = Matrix::sparseMatrix(adj[,'from'], adj[,'to'], dims=rep(max(rids), 2),
+									dimnames = list(rids, rids), x = r_len)
+	attr(res, "length") = lens
+	res
 }
 
 
@@ -230,57 +238,6 @@ NULL
 	return(res_mat)
 }
 
-
-#' Check and fix problems with drainage direction
-#' @param conn A preliminary topology matrix
-#' @param drain Drainage direction matrix
-#' @param prev_probs Previous number of problems, to allow stopping if no improvement on
-#' 		subsequent calls
-#' @details In some cases, drainage direction rasters don't agree with flow accumulation, resulting
-#' 		in a delineated stream that doesn't have the right drainage direction. This function
-#' 		attempts to detect and fix this in the adjacency matrix and the drainage layer.
-#'
-#' 		Not used in the current version; can be reactivated if there are problems
-#' @keywords internal
-#' @return A corrected topology matrix
-.fix_topology = function(conn, drain, prev_probs = NA) {
-	probs = which(is.na(conn[,'to_id']) & conn[,'drainage'] > 0)
-	if(length(probs) == 0 | (!is.na(prev_probs) & length(probs) == prev_probs))
-		return(conn)
-
-	c_fixed = do.call(rbind, lapply(conn[probs,'from_id'], .fix_drainage, drain = drain, conn = conn))
-	conn = conn[-probs,]
-	conn <- rbind(conn, c_fixed)
-	.fix_topology(conn, drain, prev_probs = length(probs))
-}
-
-
-#' Fix drainage direction for a single pixel
-#' @param id ID of the problematic pixel
-#' @param connMat preliminary connectivity matrix
-#' @param drainMat Drainage direction matrix
-#' @keywords internal
-#' @return corrected row from the connectivity matrix
-.fix_drainage = function(id, drain, conn) {
-	i = which(drain[,'id'] == id) # problem cell index
-	j = which(conn[,'to_id'] == id) # upstream of problem cell
-	up_id = conn[j,'from_id']
-	x = drain[i,'x']
-	y = drain[i,'y']
-	down_ind = which(drain[,'x'] >= x-1 & drain[,'x'] <= x+1 & drain[,'y'] >= y-1 & drain[,'y'] <= y+1 & !(drain[,'id'] %in% c(id, up_id)))
-	out = conn[conn[,'from_id'] == id,]
-	if(length(down_ind) == 1) {
-		out[,'newx'] = drain[down_ind,'x']
-		out[,'newy'] = drain[down_ind,'y']
-		out[,'to_id'] = drain[down_ind,'id']
-		xo = out[,'newx'] - drain[i,'x']
-		yo = out[,'newy'] - drain[i,'y']
-		xoffset = c(1, 0, -1, -1, -1, 0, 1, 1)
-		yoffset = c(-1, -1, -1, 0, 1, 1, 1, 0)
-		out[,'drainage'] = which(xoffset == xo & yoffset == yo)
-	}
-	out
-}
 
 
 #' Verify that the topology is working as expected

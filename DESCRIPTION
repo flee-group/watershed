@@ -1,6 +1,6 @@
 Package: watershed
 Title: Tools for Watershed Delineation
-Version: 0.3.0.9002
+Version: 0.3.0.9003
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -19,12 +19,12 @@ Imports:
     rgrass7 (>= 0.2),
     raster (>= 3.3),
     sf (>= 0.9),
-    units (>= 0.6)
+    units (>= 0.6),
+    Matrix (>= 1.2)
 SystemRequirements:
 	GRASS GIS (>= 7.4)
 Suggests: 
     knitr,
     rmarkdown,
     testthat,
-    Matrix (>= 1.2)
 VignetteBuilder: knitr

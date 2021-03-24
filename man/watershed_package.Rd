@@ -14,7 +14,10 @@ users can use rgrass7 to access GRASS GIS functions directly.
 \section{Key functions}{
 
 \itemize{
-\item \code{\link[=foo]{foo()}} A function for doing foo
+\item \code{\link[=delineate]{delineate()}} Produce a stream map from a digital elevation model
+\item \code{\link[=pixel_topology]{pixel_topology()}} Construct river network topologies
+\item \code{\link[=reach_topology]{reach_topology()}} Construct river network topologies
+\item \code{\link[=catchment]{catchment()}} Compute catchment areas
 }
 }
 

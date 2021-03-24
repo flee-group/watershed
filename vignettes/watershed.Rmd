@@ -109,7 +109,8 @@ CA = catchment(kamp, type = 'reach', Tp = kamp_Tp)
 rids = unique(kamp$stream)
 ## not all reaches survive the transition to vector, and the orders are not the same, so we match by rid
 ## We also convert to log scale to make the map more readable
-kv$log_catchment_area = log(CA[kv$reach_id])
+kv$catch_area = CA[kv$reach_id]
+kv$log_catchment_area = log(kv$catch_area)
 plot(kv['log_catchment_area'])
 ```
 
@@ -118,6 +119,16 @@ plot(kv['log_catchment_area'])
 
 `watershed` includes a simple function for estimating discharge and hyrdaulic geometry at all points/reaches in the stream given. See `?hydraulic_scaling` for details and references on the scaling used.
 
-We load the dataset `kamp_q` for observations of discharge. We'll use the largest as the basis of the scaling.
+We load the dataset `kamp_q` for observations of discharge. We first need to make sure the points are exactly on the stream, then compute the catchment area for each point. Finally, we can then use the reach-level catchment areas to compute discharge and geometry for every reach in the watershed.
+
+```{r geometry}
+library(units)
+data(kamp_q)
+kamp_q = st_snap(kamp_q, kv, tolerance = 200)
+kamp_q$catch_area = catchment(kamp, type = "points", y = st_coordinates(kamp_q))
+hydraulic_geometry(kamp_q$catch_area, kamp_q$discharge, kv$catch_area)
+
+```
+
 
 ## My network doesn't match aerial photos!

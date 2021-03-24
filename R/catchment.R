@@ -48,6 +48,9 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 	} else if(type == "pixel") {
 		y = raster::coordinates(x)
 		y = y[!is.na(raster::values(x[['stream']])), ]
+	} else {
+		if(!is.matrix(y))
+			y = matrix(y, ncol=2)
 	}
 
 	if(is.matrix(y))
@@ -56,7 +59,6 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 	drainage = "drainage"
 	catch_names = paste("catchment", seq_along(y), sep='_')
 	.start_grass(x[['drainage']], drainage)
-
 
 	if(area) {
 		res = mapplfun(.catchment_area, y = y, out_name = catch_names, MoreArgs = list(drain_name = drainage),

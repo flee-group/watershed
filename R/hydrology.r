@@ -2,17 +2,22 @@
 #' @param Ac Vector of catchment area for calibration points in $m^2$
 #' @param Qc Vector of discharge for calibration points in $m^3/s$
 #' @param Ap Vector or raster of catchment area for prediction
+#' @param use_prior Logical, use the prior for scaling? See 'details'
 #' @details Computes discharge from catchment area as \eqn{\log Q = \log b + m \log A}.
 #' 		If a single point in `calib` is included, the relationship will be re-parameterised by
 #'  	adjusting the intercept parameter `b` so that the calibration point falls on the line
 #' 		(while keeping the slope the same).
 #'
-#' 		With multiple points, a bayesian regression model is fit with rstanarm. The model uses
-#' 		Burgers et al parameters as an informative prior.
+#' 		With multiple points, a regression model is fit. If `use_prior == TRUE`, this is a Bayesian model
+#' 		using the parameters from Burgers et al (2014). These priors are calibrated from a variety of rivers,
+#' 		and the prior is quite strong, so it is possible with a small number of calibration points that the line
+#' 		is quite far from the calibration. In this case, either re-run this function with a single calibration point,
+#' 		or run with `use_prior = FALSE` (but this is only recommended if `range(Ac)` is similar to `range(Ap)`.
 #'
-#' 		The default parameters used by this function come from Burgers et al (2014).
-#' 		For these parameters, catchment area units are expected to be in
+#' 		For discharge scaling, catchment area units are expected to be in
 #' 		\eqn{m^2}, and discharge will be computed in \eqn{m^3 s^{-1}}.
+#'
+#' 		Following computation of discharge, other aspects of hydralic geometry are computed following Raymond et al (2012).
 #' @references Burgers HE et al. 2014. Size relationships of water discharge in rivers: scaling
 #' 		of discharge with catchment area, main-stem lengthand precipitation.
 #' 		*Hydrological Processes*. **28**:5769-5775.
@@ -46,7 +51,7 @@
 #'     * w; width
 #'     * Ax; stream cross-sectional area
 #' @export
-hydraulic_geometry = function(Ac, Qc, Ap) {
+hydraulic_geometry = function(Ac, Qc, Ap, use_prior = TRUE) {
 	if(length(Ac) != length(Qc))
 		stop("Ac and Qc must have the same length")
 
@@ -64,10 +69,13 @@ hydraulic_geometry = function(Ac, Qc, Ap) {
 		Qc = units::set_units(Qc, "m^3/s")
 	}
 
-	## convert the input units to those expected from Burgers et al
-	Ap = units::set_units(Ap, "km^2")
+	## convert the input units to those expected from Burgers et al, then drop the units
+	Ap_km = units::set_units(Ap, "km^2")
 	Ac = units::set_units(Ac, "km^2")
 	Qc = units::set_units(Qc, "km^3/day")
+	Ap_km = units::drop_units(Ap_km)
+	Ac = units::drop_units(Ac)
+	Qc = units::drop_units(Qc)
 
 	if(length(Ac) == 1) {
 		pars = .q_prior[1,]
@@ -75,19 +83,17 @@ hydraulic_geometry = function(Ac, Qc, Ap) {
 	} else {
 		pars = .q_calib(Ac, Qc)
 	}
-	Qp = .q_predict(pars, Ac)
-
-	## convert units back for Qp - NEEDED??
-	# Qp = units::set_units(Qp, NULL)
+	qq = .q_predict(pars, Ap_km)
+	Qp = units::set_units(qq, "km^3/day")
+	Qp = units::set_units(Qp, "m^3/s")
 
 	## parameters from Raymond et al
 	res = data.frame(
 		CA = Ap,
-		Q =	units::set_units(Qp, "m^3/s"),
-		v = units::set_units(exp(-1.64 + 0.285 * log(Qp)), "m/s"),
-		z = units::set_units(exp(-0.895 + 0.294 * log(Qp)), "m"),
-		w = units::set_units(exp(2.56 + 0.423 * log(Qp)), "m"))
-	res[Qp == 0, c('v', 'z', 'w')] = 0 * res[Qp == 0, c('v', 'z', 'w')]
+		Q =	Qp,
+		v = units::set_units(exp(-1.64 + 0.285 * log(qq)), "m/s"),
+		z = units::set_units(exp(-0.895 + 0.294 * log(qq)), "m"),
+		w = units::set_units(exp(2.56 + 0.423 * log(qq)), "m"))
 	res
 }
 
@@ -101,7 +107,7 @@ hydraulic_geometry = function(Ac, Qc, Ap) {
 .q_calib = function(a, q) {
 	par = rnorm(3, .q_prior()[1,], .q_prior()[2,]*2)
 	names(par) = c("log_intercept", "slope", 'log_sd')
-	optim(par, .q_lpost, a = a, q = q)$par
+	optim(par, .q_lpost, a = a, q = q, control=list(fnscale=-1))$par
 }
 
 #' @rdname q_calib

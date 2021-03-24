@@ -1,7 +1,8 @@
+library(raster)
+library(sf)
+
 test_that("r.watershed", {
 	skip_on_cran()
-	library(raster)
-	library(sf)
 	kamp_dem_sm = readRDS(system.file("testdata/kamp_dem_sm.rds", package="watershed"))
 	expect_error(kamp_sm <- delineate(kamp_dem_sm), regex=NA)
 	expect_error(kamp_sm2 <- delineate(kamp_dem_sm, reach_len = 200), regex=NA)
@@ -16,7 +17,5 @@ test_that("r.watershed", {
 	## invalid inputs
 	expect_error(resize_reaches(kamp_sm, pixel_topology(kamp_sm), len = 200), regex="single-layer")
 	expect_error(resize_reaches(kamp_sm$accum, pixel_topology(kamp_sm), len = 200), regex="integer")
-
-
 })
 

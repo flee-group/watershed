@@ -4,7 +4,7 @@
 \alias{hydraulic_geometry}
 \title{Compute discharge and hyrdaulic geometry}
 \usage{
-hydraulic_geometry(Ac, Qc, Ap)
+hydraulic_geometry(Ac, Qc, Ap, use_prior = TRUE)
 }
 \arguments{
 \item{Ac}{Vector of catchment area for calibration points in $m^2$}
@@ -12,6 +12,8 @@ hydraulic_geometry(Ac, Qc, Ap)
 \item{Qc}{Vector of discharge for calibration points in $m^3/s$}
 
 \item{Ap}{Vector or raster of catchment area for prediction}
+
+\item{use_prior}{Logical, use the prior for scaling? See 'details'}
 }
 \value{
 A data.frame with the following variables:
@@ -29,12 +31,16 @@ Compute discharge and hyrdaulic geometry
 Computes discharge from catchment area as \eqn{\log Q = \log b + m \log A}.
 If a single point in \code{calib} is included, the relationship will be re-parameterised by
 adjusting the intercept parameter \code{b} so that the calibration point falls on the line
-(while keeping the slope the same).\preformatted{	With multiple points, a bayesian regression model is fit with rstanarm. The model uses
-	Burgers et al parameters as an informative prior.
+(while keeping the slope the same).\preformatted{	With multiple points, a regression model is fit. If `use_prior == TRUE`, this is a Bayesian model
+	using the parameters from Burgers et al (2014). These priors are calibrated from a variety of rivers,
+	and the prior is quite strong, so it is possible with a small number of calibration points that the line
+	is quite far from the calibration. In this case, either re-run this function with a single calibration point,
+	or run with `use_prior = FALSE` (but this is only recommended if `range(Ac)` is similar to `range(Ap)`.
 
-	The default parameters used by this function come from Burgers et al (2014).
-	For these parameters, catchment area units are expected to be in
+	For discharge scaling, catchment area units are expected to be in
 	\eqn{m^2}, and discharge will be computed in \eqn{m^3 s^{-1}}.
+
+	Following computation of discharge, other aspects of hydralic geometry are computed following Raymond et al (2012).
 }
 }
 \examples{

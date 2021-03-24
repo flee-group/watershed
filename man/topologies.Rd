@@ -30,8 +30,9 @@ Build pixel and reach topologies for delineated streams
 \details{
 The topology is a square matrix showing immediate adjacency between pixels/reaches. Each row/column
 in the topology is a single pixel/reach. Zero entries indicate no adjacency between two nodes. A non-zero entry
-for row \code{i} column \code{j} indicates that \code{i} is upstream of \code{j}. The value in the entry is the length of the
-upstream pixel/reach.
+for row \code{i} column \code{j} indicates that \code{i} is upstream of \code{j}. The value in the entry is the reaction length of the
+upstream pixel/reach; this is the midpoint to midpoint distance from i to j. The actual length of each node is stored in the
+\code{length} attribute; thus \code{Tp[i,j] == sum(attr(Tp, "length")[c(i,j)])/2}
 }
 \examples{
 \donttest{
@@ -39,5 +40,6 @@ upstream pixel/reach.
     kamp = delineate(kamp_dem, outlet = NA)
     Tp = pixel_topology(kamp)
     Tr = reach_topology(kamp, Tp)
+
 }
 }

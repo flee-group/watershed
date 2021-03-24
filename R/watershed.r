@@ -8,7 +8,10 @@
 #'
 #' @section Key functions:
 #'
-#' * [foo()] A function for doing foo
+#' * [delineate()] Produce a stream map from a digital elevation model
+#' * [pixel_topology()] Construct river network topologies
+#' * [reach_topology()] Construct river network topologies
+#' * [catchment()] Compute catchment areas
 #'
 #' @section Datasets:
 #' * [kamp_dem] An example digital elevation model for the Kamp river in Austria
