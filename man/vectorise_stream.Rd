@@ -5,10 +5,12 @@
 \title{Vectorize a stream layer
 Produces a vector layer (in \code{sf} format) from a raster stream map as created by \code{\link[=delineate]{delineate()}}.}
 \usage{
-vectorise_stream(x)
+vectorise_stream(x, Tp)
 }
 \arguments{
 \item{x}{A \link{raster} stream map, such as one created by \code{\link[=delineate]{delineate()}}.}
+
+\item{Tp}{A pixel topology}
 }
 \value{
 An \code{sf} stream layer
@@ -21,6 +23,6 @@ Produces a vector layer (in \code{sf} format) from a raster stream map as create
 \donttest{
     data(kamp_dem)
     x = delineate(kamp_dem)
-    vect = vectorise_stream(x)
+    vect = vectorise_stream(x$stream, pixel_topology(x))
 }
 }

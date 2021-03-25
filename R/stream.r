@@ -86,20 +86,52 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	res
 }
 
+
 #' @name vectorise_stream
 #' @rdname vectorise_stream
 #' @title Vectorize a stream layer
 #' Produces a vector layer (in `sf` format) from a raster stream map as created by [delineate()].
 #' @param x A [raster] stream map, such as one created by [delineate()].
+#' @param Tp A pixel topology
 #' @return An `sf` stream layer
 #' @examples
 #' \donttest{
 #'     data(kamp_dem)
 #'     x = delineate(kamp_dem)
-#'     vect = vectorise_stream(x)
+#'     vect = vectorise_stream(x$stream, pixel_topology(x))
 #' }
 #' @export
-vectorise_stream = function(x) {
+vectorise_stream = function(x, Tp) {
+
+	rids = raster::unique(x)
+	vals = cbind(data.frame(reach_id = x[]), raster::coordinates(x))
+	sf_pts = sf::st_as_sf(vals, coords = c('x', 'y'), crs=sf::st_crs(x))
+	
+	lines = lapply(rids, .pts_to_line, x = x, pts = sf_pts, Tp = Tp)
+	do.call(rbind, lines)
+}
+
+.pts_to_line = function(i, x, pts, Tp) {
+	pids = extract_reach(i, x, Tp, sorted = TRUE)
+	pids = c(pids, .downstream(Tp, pids[length(pids)]))
+	xy = sf::st_cast(sf::st_geometry(pts[pids,]), "POINT")
+	# convert each pair of points into a linestring	
+	lines = sapply(1:(length(pids)-1), function(j) 
+		sf::st_cast(sf::st_combine(xy[j:(j+1)]), "LINESTRING"))
+	# convert the whole thing to a multilinestring
+	mline = sf::st_sf(sf::st_geometry(sf::st_multilinestring(lines)))
+	sf::st_crs(mline) = sf::st_crs(pts)
+	mline$reach_id = i
+	mline	
+}
+
+#' @name vectorise_stream_old
+#' @rdname vectorise_stream_old
+#' @title Vectorize a stream layer
+#' Deprecated, use vectorise_stream()..
+#' @return An `sf` stream layer
+#' @keywords internal
+vectorise_stream_old = function(x) {
 	inpname = "stream"
 	outname = "stream_thin"
 	vectname = "stream_vect"

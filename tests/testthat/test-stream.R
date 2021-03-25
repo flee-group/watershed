@@ -17,5 +17,8 @@ test_that("r.watershed", {
 	## invalid inputs
 	expect_error(resize_reaches(kamp_sm, pixel_topology(kamp_sm), len = 200), regex="single-layer")
 	expect_error(resize_reaches(kamp_sm$accum, pixel_topology(kamp_sm), len = 200), regex="integer")
+	
+	## vectorizing
+	
 })
 
