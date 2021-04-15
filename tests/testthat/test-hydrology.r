@@ -13,7 +13,7 @@ test_that("Hydrology", {
 
 	## should work fine if units are changed
 	expect_error(hyd2 <- hydraulic_geometry(kamp_q$ca, kamp_q$discharge, set_units(ca, "km^2")), regex = NA)
-	expect_equal(hyd1, hyd2, tolerance = 1e-3) ## quite a bit of error due to the bayesian regression
+	expect_equal(hyd1, hyd2, tolerance = 1e-2) ## quite a bit of error due to the bayesian regression
 
 	## should get a different calibration if we screw up the units
 	hyd3 <- hydraulic_geometry(kamp_q$ca, kamp_q$discharge, set_units(kamp_vect$ca, "km^2"))

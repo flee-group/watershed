@@ -32,6 +32,9 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	cell_area = prod(raster::res(dem))
 	threshold_cell = floor(threshold/cell_area)
 
+	if(threshold_cell < 1)
+		stop("Threshold too small, resulting in zero pixels chosen (threshold must be > prod(raster::res(dem)")
+
 	if(threshold_cell / raster::ncell(dem) < 0.0001)
 		warning("Small threshold; excessive computation time and memory usage are possible if threshold not increased")
 
@@ -58,7 +61,7 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 
 	## Clip to a single network
 	if(length(outlet) == 1 && is.na(outlet))
-		outlet = matrix(raster::coordinates(res)[which.max(abs(raster::values(res$accum))),], ncol=2)
+		outlet = matrix(raster::coordinates(res)[which.max(raster::values(res$accum)),], ncol=2)
 	catch = catchment(res, type = "points", y = outlet, area = FALSE)
 
 	catch = raster::trim(catch)
@@ -106,7 +109,7 @@ vectorise_stream = function(x, Tp) {
 	rids = raster::unique(x)
 	vals = cbind(data.frame(reach_id = x[]), raster::coordinates(x))
 	sf_pts = sf::st_as_sf(vals, coords = c('x', 'y'), crs=sf::st_crs(x))
-	
+
 	lines = lapply(rids, .pts_to_line, x = x, pts = sf_pts, Tp = Tp)
 	do.call(rbind, lines)
 }
@@ -115,14 +118,14 @@ vectorise_stream = function(x, Tp) {
 	pids = extract_reach(i, x, Tp, sorted = TRUE)
 	pids = c(pids, .downstream(Tp, pids[length(pids)]))
 	xy = sf::st_cast(sf::st_geometry(pts[pids,]), "POINT")
-	# convert each pair of points into a linestring	
-	lines = sapply(1:(length(pids)-1), function(j) 
+	# convert each pair of points into a linestring
+	lines = sapply(1:(length(pids)-1), function(j)
 		sf::st_cast(sf::st_combine(xy[j:(j+1)]), "LINESTRING"))
 	# convert the whole thing to a multilinestring
 	mline = sf::st_sf(sf::st_geometry(sf::st_multilinestring(lines)))
 	sf::st_crs(mline) = sf::st_crs(pts)
 	mline$reach_id = i
-	mline	
+	mline
 }
 
 #' @name vectorise_stream_old
