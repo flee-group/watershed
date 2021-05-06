@@ -110,7 +110,13 @@ vectorise_stream = function(x, Tp) {
 	vals = cbind(data.frame(reach_id = x[]), raster::coordinates(x))
 	sf_pts = sf::st_as_sf(vals, coords = c('x', 'y'), crs=sf::st_crs(x))
 
-	lines = lapply(rids, .pts_to_line, x = x, pts = sf_pts, Tp = Tp)
+	if(!is.null(getOption("mc.cores")) && getOption("mc.cores") > 1) {
+		lapplfun = parallel::mclapply
+	} else {
+		lapplfun = lapply
+	}
+
+	lines = lapplfun(rids, .pts_to_line, x = x, pts = sf_pts, Tp = Tp)
 	do.call(rbind, lines)
 }
 
