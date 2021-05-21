@@ -36,14 +36,13 @@ pixel_topology = function(x, drainage, stream) {
 	nr = raster::nrow(drainage)
 	nc = raster::ncol(drainage)
 	ncl = raster::ncell(drainage)
-	row_ras = raster::raster(matrix(1:nr, nrow=nr, ncol=nc), template = drainage)
-	col_ras = raster::raster(matrix(1:nc, nrow=nr, ncol=nc, byrow=TRUE), template = drainage)
-	id_ras = raster::raster(matrix(1:ncl, nrow=nr, ncol=nc, byrow=TRUE), template = drainage)
-	coords = raster::stack(list(x = col_ras, y = row_ras, drainage = drainage, id = id_ras))
-	coords = raster::mask(coords, stream)
-
-	vals = raster::values(coords)
-	vals = vals[!is.na(vals[,1]), ]
+	vals = raster::values(raster::stack(list(
+		x = raster::raster(matrix(1:nc, nrow=nr, ncol=nc, byrow=TRUE), template = drainage),
+		y = raster::raster(matrix(1:nr, nrow=nr, ncol=nc), template = drainage),
+		id = raster::raster(matrix(1:ncl, nrow=nr, ncol=nc, byrow=TRUE), template = drainage),
+		drainage = drainage,
+		stream = stream)))
+	vals = vals[complete.cases(vals),]
 
 	## compute the length of each pixel
 	r = raster::res(stream)
