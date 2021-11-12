@@ -1,27 +1,31 @@
 #' Delineate streams from an elevation model
 #' @param dem A [raster::raster]; a digital elevation model.
-#' @param threshold The minimum size of a delineated catchment; units are in dem_units^2 (e.g., m^2); default 10 km^2.
+#' @param threshold The minimum size of a delineated catchment; units are in dem_units^2 
+#'		(e.g., m^2); default 10 km^2.
 #' @param pretty Should flat areas be made prettier? Corresponds to r.watershed -b flag
 #' @param file The file name of the raster to be returned, see `details`.
 #' @param outlet The location of the outlet of the target stream, see `details`.
 #' @param reach_len Optional; if provided, reaches will be resized to meet this target length
 #' @param ... If `reach_len` is specified, additional parameters to be passed to [resize_reaches()]
-#' @details This is a wrapper for [r.watershed](https://grass.osgeo.org/grass76/manuals/r.watershed.html).
+#' @details This is a wrapper for 
+#'		[r.watershed](https://grass.osgeo.org/grass76/manuals/r.watershed.html).
 #'
-#' The threshold parameter controls the level of detail in the delineated streams. Higher thresholds result in faster
-#' computation and fewer streams in the output. For finer control, see [extract_stream()].
+#' The threshold parameter controls the level of detail in the delineated streams. Higher 
+#'		thresholds result in faster computation and fewer streams in the output. For finer control, 
+#'		see [extract_stream()].
 #'
 #' If `outlet` is `NA` (the default), then the largest stream in the area will be set as the outlet,
-#' and only streams in that watershed will be used.
-#' If a smaller stream is the focus, then outlet can be a pair of x-y coordinates which will determine the farthest
-#' downstream point to use.
+#' 		and only streams in that watershed will be used. If a smaller stream is the focus, then 
+#'		outlet can be a pair of x-y coordinates which will determine the farthest downstream point 
+#'		to use.
 #'
 #' Streams can be converted to a vector file, see [stream_vector()].
 #'
 #' It is recommended to specify the `file` parameter (including the extension to specify
 #' file format; e.g., .tif, .grd). If not specified, a temp file will be created and will be
 #' lost at the end of the R session.
-#' @return A [raster::stack()], containing the drainage map, the flow accumulation map, and the delineated streams.
+#' @return A [raster::stack()], containing the drainage map, the flow accumulation map, and the 
+#"		delineated streams.
 #' @examples
 #' \donttest{
 #'     data(kamp_dem)
@@ -33,10 +37,12 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	threshold_cell = floor(threshold/cell_area)
 
 	if(threshold_cell < 1)
-		stop("Threshold too small, resulting in zero pixels chosen (threshold must be > prod(raster::res(dem)")
+		stop("Threshold too small, resulting in zero pixels chosen (threshold must be >", 
+			" prod(raster::res(dem)")
 
 	if(threshold_cell / raster::ncell(dem) < 0.0001)
-		warning("Small threshold; excessive computation time and memory usage are possible if threshold not increased")
+		warning("Small threshold; excessive computation time and memory usage are possible if",
+			"threshold not increased")
 
 	flags = c("overwrite", "quiet")
 	if(pretty)
@@ -51,8 +57,9 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	.start_grass(dem, elevation)
 
 	## perform computation
-	rgrass7::execGRASS("r.watershed", flags=flags, elevation=elevation, threshold = threshold_cell,
-					   accumulation = accum, drainage = drainage, stream = stream)
+	rgrass7::execGRASS("r.watershed", flags=flags, elevation=elevation, 
+		threshold = threshold_cell, accumulation = accum, drainage = drainage, stream = stream)
+
 	# make sure to add the names of created rasters to the list of layers
 	ws_env$rasters = c(ws_env$rasters, accum, drainage, stream)
 
@@ -65,15 +72,21 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	catch = catchment(res, type = "points", y = outlet, area = FALSE)
 
 	catch = raster::trim(catch)
-	res = raster::crop(res, catch)
+	res = suppressWarnings(raster::crop(res, catch))
 	stream_clip = raster::mask(res$stream, catch)
+	id = stream_clip
+	i = which(!is.na(raster::values(id)))
+	id[i] = 1:length(i)
 	res = raster::dropLayer(res, which(names(res) == stream))
-	res = raster::addLayer(res, stream = stream_clip, catchment = catch)
+	res = raster::addLayer(res, stream_clip, catch, id)
+	names(res) = c("accum", "drainage", "stream", "catchment", "id")
 
 	## renumber reaches to go from 1:nreaches, make sure streams are integers
 	res[['stream']] = raster::match(res[['stream']],
 					raster::unique(res[['stream']]))
 	storage.mode(res[['stream']][]) = 'integer'
+	storage.mode(res[['id']][]) = 'integer'
+
 
 	if(!missing(reach_len)) {
 		Tp = pixel_topology(res)
@@ -94,7 +107,7 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 #' @rdname vectorise_stream
 #' @title Vectorize a stream layer
 #' Produces a vector layer (in `sf` format) from a raster stream map as created by [delineate()].
-#' @param x A [raster] stream map, such as one created by [delineate()].
+#' @param x A [raster::stack], such as one created by [delineate()].
 #' @param Tp A pixel topology
 #' @return An `sf` stream layer
 #' @examples
@@ -106,8 +119,10 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 #' @export
 vectorise_stream = function(x, Tp) {
 
-	rids = raster::unique(x)
-	vals = cbind(data.frame(reach_id = x[]), raster::coordinates(x))
+	rids = raster::unique(x$stream)
+	vals = data.frame(raster::rasterToPoints(x))
+	vals = subset(vals, !is.na(id))
+	# vals = cbind(data.frame(reach_id = x[]), raster::coordinates(x))
 	sf_pts = sf::st_as_sf(vals, coords = c('x', 'y'), crs=sf::st_crs(x))
 
 	if(!is.null(getOption("mc.cores")) && getOption("mc.cores") > 1) {
@@ -115,6 +130,13 @@ vectorise_stream = function(x, Tp) {
 	} else {
 		lapplfun = lapply
 	}
+
+	# lines = list()
+	# nr = length(rids)
+	# for(i in 1:nr) {
+	# 	lines[i] = .pts_to_line(rids[i], x = x, pts = sf_pts, Tp = Tp)
+	# 	cat(paste0(Sys.time(), "  ", i, "/", nr, " (", round(100 * i/nr, 0), "%)", "\r"))
+	# }
 
 	lines = lapplfun(rids, .pts_to_line, x = x, pts = sf_pts, Tp = Tp)
 	do.call(rbind, lines)
@@ -189,8 +211,8 @@ resize_reaches = function(x, Tp, len, min_len = 0.5 * len, trim = TRUE) {
 		stop("x must be a single-layer raster stream delineation with integer reach ids as values")
 
 	pids = lapplfun(ids, extract_reach, stream=x, Tp = Tp, sorted = TRUE)
-	new_reaches = unlist(lapplfun(pids, .resize_r, Tp = Tp, trim = trim, len = len, min_len = min_len),
-						 recursive = FALSE)
+	new_reaches = unlist(lapplfun(pids, .resize_r, Tp = Tp, trim = trim, len = len,
+			min_len = min_len), recursive = FALSE)
 	x = x * NA
 	for(i in seq_along(new_reaches))
 		x[new_reaches[[i]]] = i

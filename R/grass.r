@@ -14,7 +14,10 @@
 		gisBase = getOption("gisBase")
 	rgrass7::initGRASS(gisBase, home=home, gisDbase = gisDbase, location = location,
 					   mapset = mapset, override = TRUE)
-	err = rgrass7::execGRASS("g.proj", flags = "c", proj4 = sp::proj4string(layer), intern=TRUE)
+	err <- tryCatch(rgrass7::execGRASS("g.proj", flags = "c", proj4 = sp::proj4string(layer), 
+		intern=TRUE),
+		error = function(e) stop(e),
+		warning = function(w) if(!grepl("Datum.+not recognised", w$message)) warning(w))
 	ext = as.character(as.vector(raster::extent(layer)))
 	rasres = as.character(raster::res(layer))
 	rgrass7::execGRASS("g.region", n = ext[4], s = ext[3], e = ext[2], w = ext[1],
@@ -50,8 +53,9 @@
 #' @param x A single vector layer name to read
 #' @keywords internal
 .read_rasters = function(layers, file) {
-	ras = sapply(layers, rgrass7::readRAST)
-	ras = sapply(ras, raster::raster)
+	ras = sapply(layers, function(l) {
+		suppressWarnings(val <- rgrass7::readRAST(l)) # proj warnings suppressed
+		raster::raster(val)})
 	if(length(layers) > 1) {
 		ras = raster::stack(ras)
 		names(ras) = layers
@@ -71,8 +75,8 @@
 }
 
 #' Clean up grass files
-#' @param raster Raster layers to remove, if missing, all will be removed, if NA, none will be removed
-#' @param vector Vector layers to remove, if missing, all will be removed, if NA, none will be removed
+#' @param raster Raster layers to remove, if missing removes all, if NA removes none
+#' @param vector Vector layers to remove, if missing removes all, if NA removes none
 #' @details The default mode is to clean everything, removing all layers from the grass session
 #' @keywords internal
 .clean_grass = function(raster, vector) {
@@ -90,7 +94,8 @@
 		# 	cat(r, "\n")
 		# 	rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="raster", name=r)
 		# }
-		sapply(raster, function(r) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="raster", name=r))
+		sapply(raster, function(r) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), 
+			type="raster", name=r))
 		if(length(raster) == length(ws_env$rasters)) {
 			ws_env$rasters = list()
 		} else {
@@ -99,7 +104,8 @@
 	}
 
 	if(!is.na(vector) && length(vector) > 0) {
-		sapply(vector, function(v) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="vector", name=v))
+		sapply(vector, function(v) rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), 
+			type="vector", name=v))
 		if(length(vector) == length(ws_env$vectors)) {
 			ws_env$vectors = list()
 		} else {
@@ -114,11 +120,12 @@
 #'
 #' Locates a grass installation in common locations on Mac, Windows, and Linux. This is normally
 #' run automatically when the package is loaded. If multiple
-#' installations are present, the function will prefer 7.8, 7.6, 7.4, and then whatever is most recent.
+#' installations are present, the function will prefer 7.8, 7.6, 7.4, and then whatever is most 
+#' recent.
 #'
 #' In some (many?) cases, this function will fail to find a grass installation, or users may wish
-#' to specify a different version than what is detected automatically. In these cases, it is possible
-#' to manually specify the grass location using `options(gisBase = "path/to/grass")`.
+#' to specify a different version than what is detected automatically. In these cases, it is 
+#' possible to manually specify the grass location using `options(gisBase = "path/to/grass")`.
 #'
 #' @return The path to the user's grass location, or NULL if not found
 #' @export
@@ -145,7 +152,8 @@ find_grass = function() {
 		}
 		grassBase = list.files(appPath, pattern='grass', ignore.case = TRUE)
 		grassBase = .preferred_grass_version(grassBase)
-		gisBase = ifelse(is.na(suffix), file.path(appPath, grassBase), file.path(appPath, grassBase, suffix))
+		gisBase = ifelse(is.na(suffix), file.path(appPath, grassBase), 
+			file.path(appPath, grassBase, suffix))
 	}
 	return(gisBase)
 }

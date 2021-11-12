@@ -2,15 +2,19 @@
 #' @rdname topologies
 #' @title Build topologies
 #' Build pixel and reach topologies for delineated streams
-#' @param x A [raster::stack], such as one created by [delineate()], or specify layers separately with `drain` and `stream`.
+#' @param x A [raster::stack], such as one created by [delineate()], or specify layers separately 
+#'     with `drain` and `stream`.
 #' @param drainage Optional, ignored if `x` is provided; a drainage direction raster
-#' @param stream Optional, ignored if `x` is provided; a delineated stream raster, all non-stream cells must be `NA`
+#' @param stream Optional, ignored if `x` is provided; a delineated stream raster, all non-stream 
+#'		cells must be `NA`
+#' @param id Optional, ignored if `x` is provided; a raster of pixel ids, as, stream
 #' @param Tp Topology for pixels in the network, e.g., the output from [pixel_topology()].
-#' @details The topology is a square matrix showing immediate adjacency between pixels/reaches. Each row/column
-#' in the topology is a single pixel/reach. Zero entries indicate no adjacency between two nodes. A non-zero entry
-#' for row `i` column `j` indicates that `i` is upstream of `j`. The value in the entry is the reaction length of the
-#' upstream pixel/reach; this is the midpoint to midpoint distance from i to j. The actual length of each node is stored in the
-#' `length` attribute; thus `Tp[i,j] == sum(attr(Tp, "length")[c(i,j)])/2`
+#' @details The topology is a square matrix showing immediate adjacency between pixels/reaches. 
+#'		Each row/column in the topology is a single pixel/reach. Zero entries indicate no adjacency
+#'		between two nodes. A non-zero entry for row `i` column `j` indicates that `i` is 
+#'		upstream of `j`. The value in the entry is the reaction length of the upstream pixel/reach;
+#'		this is the midpoint to midpoint distance from i to j. The actual length of each node is 
+#'		stored in the `length` attribute; thus `Tp[i,j] == sum(attr(Tp, "length")[c(i,j)])/2`
 #' @return A [Matrix::sparseMatrix] giving the pixel or reach topology
 #' @examples
 #' \donttest{
@@ -24,22 +28,23 @@ NULL
 
 #' @rdname topologies
 #' @export
-pixel_topology = function(x, drainage, stream) {
+pixel_topology = function(x, drainage, stream, id) {
 	if(!requireNamespace("Matrix"))
-		stop("This functionality requires the Matrix package; please install it with install.packages('Matrix') and try again.")
+		stop("This functionality requires the Matrix package; please install it and try again.")
 
 	if(! missing(x)) {
 		stream = x[['stream']]
 		drainage = x[['drainage']]
+		id = x[['id']]
 	}
 
 	nr = raster::nrow(drainage)
 	nc = raster::ncol(drainage)
-	ncl = raster::ncell(drainage)
+	npix = sum(raster::values(!is.na(vjosa_r$stream)))
 	vals = raster::values(raster::stack(list(
 		x = raster::raster(matrix(1:nc, nrow=nr, ncol=nc, byrow=TRUE), template = drainage),
 		y = raster::raster(matrix(1:nr, nrow=nr, ncol=nc), template = drainage),
-		id = raster::raster(matrix(1:ncl, nrow=nr, ncol=nc, byrow=TRUE), template = drainage),
+		id = id,
 		drainage = drainage,
 		stream = stream)))
 	vals = vals[complete.cases(vals),]
@@ -51,9 +56,10 @@ pixel_topology = function(x, drainage, stream) {
 	xy = .flowto(vals, xmax = nc, ymax = nr)
 
 	## this is the reaction length of each connection, the midpoint-midpoint distance
-	p_len = (vals[match(xy[,'from_id'], vals[,'id']), 'len'] + vals[match(xy[,'to_id'], vals[,'id']), 'len'])/2
+	p_len = (vals[match(xy[,'from_id'], vals[,'id']), 'len'] + vals[match(xy[,'to_id'], 
+		vals[,'id']), 'len'])/2
 
-	res = Matrix::sparseMatrix(i = xy[,'from_id'], j = xy[,'to_id'], dims=rep(raster::ncell(drainage), 2), x = p_len)
+	res = Matrix::sparseMatrix(i = xy[,'from_id'], j = xy[,'to_id'], dims=rep(npix, 2), x = p_len)
 	attr(res, "length") = vals[,'len']
 	.check_topology(res, warn = TRUE)
 	res
@@ -61,15 +67,12 @@ pixel_topology = function(x, drainage, stream) {
 
 #' @rdname topologies
 #' @export
-reach_topology = function(x, Tp, stream) {
+reach_topology = function(x, Tp) {
 	if(missing(Tp))
 		stop("A topology is required for this function")
 
 	if(!requireNamespace("Matrix"))
-		stop("This functionality requires the Matrix package; please install it with install.packages('Matrix') and try again.")
-
-	if(missing(stream))
-		stream = x[['stream']]
+		stop("This functionality requires the Matrix package; please install it and try again.")
 
 	if(!is.null(getOption("mc.cores")) && getOption("mc.cores") > 1) {
 		lapplfun = parallel::mclapply
@@ -77,16 +80,16 @@ reach_topology = function(x, Tp, stream) {
 		lapplfun = lapply
 	}
 
-	rids = raster::unique(stream)
+	rids = raster::unique(x[['stream']])
 
 	if(!all(rids == 1:length(rids)))
 		stop("Reach IDs not in strict ascending order, they must be renumbered")
 
-	adj = lapplfun(rids, .upstream_r, stream = stream, Tx = Tp)
+	adj = lapplfun(rids, .upstream_r, x = x, Tx = Tp)
 	adj = do.call(rbind, adj)
 
 	## compute the length of each reach as the sum of all pixels
-	pids = lapplfun(rids, extract_reach, stream=stream, Tp = Tp)
+	pids = lapplfun(rids, extract_reach, x=x, Tp = Tp)
 	lens = unlist(lapplfun(pids, function(x) sum(Tp[x,,drop=FALSE])))
 
 	## the reaction length is the midpoint to midpoint distance for each reach
@@ -103,7 +106,7 @@ reach_topology = function(x, Tp, stream) {
 
 #' Find pixel IDs matching reach i
 #' @param i Reach number to extract
-#' @param stream Raster stream layer
+#' @param x Raster stream stack
 #' @param Tp optional Topology, only needed for sorting
 #' @param sorted Logical, should the ids be returned sorted from upstream to down?
 #' @return A vector of pixel ids
@@ -115,8 +118,8 @@ reach_topology = function(x, Tp, stream) {
 #'     extract_reach(5, kamp$stream, Tp)
 #' }
 #' @export
-extract_reach = function(i, stream, Tp, sorted = FALSE) {
-	pids = which(raster::values(stream) == i)
+extract_reach = function(i, x, Tp, sorted = FALSE) {
+	pids = x$id[x$stream == i]
 	if(sorted && length(pids) > 1) {
 		pid_s = numeric(length(pids))
 		Tp_r = Tp[pids, pids, drop=FALSE]
@@ -136,9 +139,10 @@ extract_reach = function(i, stream, Tp, sorted = FALSE) {
 #' Simple functions for extracting information from river topologies
 #' @param Tx A (pixel or reach) topology
 #' @param i,j Focal node
-#' @param stream A stream raster (as produced by [delineate()]) with reachIDs as the values
+#' @param x A stream raster stack (as produced by [delineate()])
 #' @details upstream/downstream take a single node as input, and return the up- or downstream node.
-#' Outlets/headwaters analyzes the entire toplogy and finds nodes that have no downstream or upstream neighbours.
+#' Outlets/headwaters analyzes the entire toplogy and finds nodes that have no downstream or 
+#'		upstream neighbours.
 #' @return The id (corresponding to dims of Tx) of the desired node(s)
 NULL
 
@@ -196,13 +200,13 @@ NULL
 #' @return For `.upstream_r`, A named2-column matrix, 'to' is the downstream reach (i.e., i) and
 #' 'from' contains ids of the reach(es) upstream of i; or NULL if there are none
 #' @keywords internal
-.upstream_r = function(i, stream, Tx) {
-	pids = extract_reach(i, stream)
+.upstream_r = function(i, x, Tx) {
+	pids = extract_reach(i, x)
 	Tp_r = Tx[pids, pids, drop=FALSE]
 	r_top = pids[.headwater(Tp_r)]
 	r_nb = .upstream(Tx, r_top)
 	if(length(r_nb) > 0) {
-		from_ids = stream[r_nb]
+		from_ids = x$stream[raster::"%in%"(x$id, r_nb)]
 		res = cbind(to = i, from = from_ids)
 	} else {
 		res = NULL
@@ -227,7 +231,8 @@ NULL
 	newy = mat[,'y'] + yoffset[mat[,'drainage']]
 
 	res_mat = cbind(mat, newx, newy)
-	res_mat = merge(res_mat[,c('newx', 'newy', 'id', 'drainage')], res_mat[,c('x', 'y', 'id')], by = c(1,2), all.x = TRUE)
+	res_mat = merge(res_mat[,c('newx', 'newy', 'id', 'drainage')], res_mat[,c('x', 'y', 'id')], 
+		by = c(1,2), all.x = TRUE)
 	res_mat = res_mat[,c('newx', 'newy', 'drainage', 'id.x', 'id.y')]
 	colnames(res_mat)[4:5] = c('from_id', 'to_id')
 

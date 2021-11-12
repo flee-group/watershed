@@ -5,9 +5,11 @@
 #' @param x A [raster::stack], such as one created by [delineate()].
 #' @param type The scale at which to compute catchments, see 'details'
 #' @param y Matrix, 2-columns, giving coordinates at which to compute the catchments
-#' @param area boolean, if `TRUE` returns the catchment area, if `FALSE` returns the catchment raster
+#' @param area boolean, if `TRUE` returns the catchment area, if `FALSE` returns a raster
 #' @param Tp Optional topology, used if type != "points", will be computed if not provided
-#' @details The type parameter controls how many catchments/catchment areas are computed (and how long the function will take).
+#' @details The type parameter controls how many catchments/catchment areas are computed 
+#'		(and how long the function will take).
+#'
 #'    * `'outlet'`: Compute only for the outlet of the entire network
 #'    * `'reach'`: Compute one catchment area per reach, computed at the bottom of the reach
 #'    * `'points'`: Compute catchment for user-specified points, given by the `y` parameter
@@ -61,10 +63,11 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 	.start_grass(x[['drainage']], drainage)
 
 	if(area) {
-		res = mapplfun(.catchment_area, y = y, out_name = catch_names, MoreArgs = list(drain_name = drainage),
-					   USE.NAMES = FALSE, SIMPLIFY = TRUE)
+		res = mapplfun(.catchment_area, y = y, out_name = catch_names, 
+				MoreArgs = list(drain_name = drainage), USE.NAMES = FALSE, SIMPLIFY = TRUE)
 	} else {
-		res = mapplfun(.catchment, y = y, out_name = catch_names, MoreArgs = list(drain_name = drainage), SIMPLIFY = FALSE)
+		res = mapplfun(.catchment, y = y, out_name = catch_names, 
+			MoreArgs = list(drain_name = drainage), SIMPLIFY = FALSE)
 		if(length(res) == 1) {
 			res = res[[1]]
 			names(res) = "catchment"
@@ -90,7 +93,8 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 #' * `.catchment` runs `.do_catchment` and then extracts and returns the raster from GRASS
 .catchment_area = function(y, out_name, drain_name) {
 	.do_catchment(y, out_name, drain_name)
-	res = capture.output(rgrass7::execGRASS("r.stats", flags=c("overwrite", "quiet", "a"), input = out_name))
+	res = capture.output(rgrass7::execGRASS("r.stats", flags=c("overwrite", "quiet", "a"), 
+		input = out_name))
 	.clean_grass(raster = out_name, vector = NA)
 	pat = "^1 ([0-9//.]+)"
 	res = res[grepl(pat, res)]
@@ -110,7 +114,8 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 #' @rdname catchment_area
 #' @keywords internal
 .do_catchment = function(y, out_name, drain_name) {
-	rgrass7::execGRASS("r.water.outlet", flags=c("overwrite", "quiet"), input=drain_name, output = out_name, coordinates = y)
+	rgrass7::execGRASS("r.water.outlet", flags=c("overwrite", "quiet"), input=drain_name, 
+		output = out_name, coordinates = y)
 	if(!(out_name %in% ws_env$rasters))
 		ws_env$rasters = c(ws_env$rasters, out_name)
 }
