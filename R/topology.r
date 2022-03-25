@@ -40,7 +40,7 @@ pixel_topology = function(x, drainage, stream, id) {
 
 	nr = raster::nrow(drainage)
 	nc = raster::ncol(drainage)
-	npix = sum(raster::values(!is.na(vjosa_r$stream)))
+	npix = sum(raster::values(!is.na(x$stream)))
 	vals = raster::values(raster::stack(list(
 		x = raster::raster(matrix(1:nc, nrow=nr, ncol=nc, byrow=TRUE), template = drainage),
 		y = raster::raster(matrix(1:nr, nrow=nr, ncol=nc), template = drainage),

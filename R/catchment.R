@@ -28,28 +28,26 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 	if(missing(Tp) && type != "points")
 		Tp = pixel_topology(x)
 
-	if(!is.null(getOption("mc.cores")) && getOption("mc.cores") > 1) {
-		lapplfun = parallel::mclapply
-		mapplfun = parallel::mcmapply
-	} else {
-		lapplfun = lapply
-		mapplfun = mapply
-	}
+	stream_i = which(!is.na(raster::values(x[['stream']])))
+	stream_coords = raster::coordinates(x)[stream_i,,drop = FALSE]
+
+	# if unix, use multiple cores if mc.cores is specified
+	cores = ifelse(.Platform$OS.type == "unix", getOption("mc.cores", 1L), 1L)
 
 	## do nothing if type is points; user must specify y themselves
 	if(type == "outlet") {
-		y = raster::coordinates(x)[.outlet(Tp),,drop=FALSE]
+		y = stream_coords[.outlet(Tp),,drop=FALSE]
 	} else if(type == "reach") {
 		## find the bottom of each reach
 		ids = raster::unique(x[['stream']])
-		pids = lapplfun(ids, extract_reach, stream=x[['stream']], Tp = Tp)
+		pids = parallel::mclapply(ids, extract_reach, stream=x[['stream']], Tp = Tp, 
+			mc.cores = cores)
 		Tp_r = lapply(pids, function(x) Tp[x,x,drop=FALSE])
 		out_r = lapply(Tp_r, .outlet)
 		out_r = mapply(function(x,y) x[y], pids, out_r)
-		y = raster::coordinates(x)[out_r,,drop=FALSE]
+		y = stream_coords[out_r,,drop=FALSE]
 	} else if(type == "pixel") {
-		y = raster::coordinates(x)
-		y = y[!is.na(raster::values(x[['stream']])), ]
+		y = stream_coords
 	} else {
 		if(!is.matrix(y))
 			y = matrix(y, ncol=2)
@@ -62,13 +60,17 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 	catch_names = paste("catchment", seq_along(y), sep='_')
 	.start_grass(x[['drainage']], drainage)
 
-	if(area) {
-		res = mapplfun(.catchment_area, y = y, out_name = catch_names, 
-				MoreArgs = list(drain_name = drainage), USE.NAMES = FALSE, SIMPLIFY = TRUE)
+	if(area && .Platform$OS.type != "windows") {
+		res = mapply(.catchment_area, y = y, out_name = catch_names, 
+				MoreArgs = list(drain_name = drainage),
+				USE.NAMES = FALSE, SIMPLIFY = TRUE)
 	} else {
-		res = mapplfun(.catchment, y = y, out_name = catch_names, 
+		res = mapply(.catchment, y = y, out_name = catch_names, 
 			MoreArgs = list(drain_name = drainage), SIMPLIFY = FALSE)
-		if(length(res) == 1) {
+		if(area) {
+			res = sapply(res, function(x) 
+				sum(raster::values(x), na.rm = TRUE) * prod(raster::res(x)))
+		} else if(length(res) == 1) {
 			res = res[[1]]
 			names(res) = "catchment"
 		} else {
