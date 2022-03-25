@@ -17,7 +17,8 @@ delineate(
 \arguments{
 \item{dem}{A \link[raster:raster]{raster::raster}; a digital elevation model.}
 
-\item{threshold}{The minimum size of a delineated catchment; units are in dem_units^2 (e.g., m^2); default 10 km^2.}
+\item{threshold}{The minimum size of a delineated catchment; units are in dem_units^2
+(e.g., m^2); default 10 km^2.}
 
 \item{pretty}{Should flat areas be made prettier? Corresponds to r.watershed -b flag}
 
@@ -30,21 +31,23 @@ delineate(
 \item{...}{If \code{reach_len} is specified, additional parameters to be passed to \code{\link[=resize_reaches]{resize_reaches()}}}
 }
 \value{
-A \code{\link[raster:stack]{raster::stack()}}, containing the drainage map, the flow accumulation map, and the delineated streams.
+A \code{\link[raster:stack]{raster::stack()}}, containing the drainage map, the flow accumulation map, and the
 }
 \description{
 Delineate streams from an elevation model
 }
 \details{
-This is a wrapper for \href{https://grass.osgeo.org/grass76/manuals/r.watershed.html}{r.watershed}.
+This is a wrapper for
+\href{https://grass.osgeo.org/grass76/manuals/r.watershed.html}{r.watershed}.
 
-The threshold parameter controls the level of detail in the delineated streams. Higher thresholds result in faster
-computation and fewer streams in the output. For finer control, see \code{\link[=extract_stream]{extract_stream()}}.
+The threshold parameter controls the level of detail in the delineated streams. Higher
+thresholds result in faster computation and fewer streams in the output. For finer control,
+see \code{\link[=extract_stream]{extract_stream()}}.
 
 If \code{outlet} is \code{NA} (the default), then the largest stream in the area will be set as the outlet,
-and only streams in that watershed will be used.
-If a smaller stream is the focus, then outlet can be a pair of x-y coordinates which will determine the farthest
-downstream point to use.
+and only streams in that watershed will be used. If a smaller stream is the focus, then
+outlet can be a pair of x-y coordinates which will determine the farthest downstream point
+to use.
 
 Streams can be converted to a vector file, see \code{\link[=stream_vector]{stream_vector()}}.
 

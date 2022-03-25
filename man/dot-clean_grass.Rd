@@ -7,9 +7,9 @@
 .clean_grass(raster, vector)
 }
 \arguments{
-\item{raster}{Raster layers to remove, if missing, all will be removed, if NA, none will be removed}
+\item{raster}{Raster layers to remove, if missing removes all, if NA removes none}
 
-\item{vector}{Vector layers to remove, if missing, all will be removed, if NA, none will be removed}
+\item{vector}{Vector layers to remove, if missing removes all, if NA removes none}
 }
 \description{
 Clean up grass files

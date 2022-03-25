@@ -4,12 +4,12 @@
 \alias{extract_reach}
 \title{Find pixel IDs matching reach i}
 \usage{
-extract_reach(i, stream, Tp, sorted = FALSE)
+extract_reach(i, x, Tp, sorted = FALSE)
 }
 \arguments{
 \item{i}{Reach number to extract}
 
-\item{stream}{Raster stream layer}
+\item{x}{Raster stream stack}
 
 \item{Tp}{optional Topology, only needed for sorting}
 

@@ -24,14 +24,14 @@ Simple functions for extracting information from river topologies}
 
 .is_outlet(Tx)
 
-.upstream_r(i, stream, Tx)
+.upstream_r(i, x, Tx)
 }
 \arguments{
 \item{Tx}{A (pixel or reach) topology}
 
 \item{i, j}{Focal node}
 
-\item{stream}{A stream raster (as produced by \code{\link[=delineate]{delineate()}}) with reachIDs as the values}
+\item{x}{A stream raster stack (as produced by \code{\link[=delineate]{delineate()}})}
 }
 \value{
 The id (corresponding to dims of Tx) of the desired node(s)
@@ -45,6 +45,7 @@ Simple functions for extracting information from river topologies
 }
 \details{
 upstream/downstream take a single node as input, and return the up- or downstream node.
-Outlets/headwaters analyzes the entire toplogy and finds nodes that have no downstream or upstream neighbours.
+Outlets/headwaters analyzes the entire toplogy and finds nodes that have no downstream or
+upstream neighbours.
 }
 \keyword{internal}

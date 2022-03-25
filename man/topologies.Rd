@@ -7,16 +7,20 @@
 \title{Build topologies
 Build pixel and reach topologies for delineated streams}
 \usage{
-pixel_topology(x, drainage, stream)
+pixel_topology(x, drainage, stream, id)
 
-reach_topology(x, Tp, stream)
+reach_topology(x, Tp)
 }
 \arguments{
-\item{x}{A \link[raster:stack]{raster::stack}, such as one created by \code{\link[=delineate]{delineate()}}, or specify layers separately with \code{drain} and \code{stream}.}
+\item{x}{A \link[raster:stack]{raster::stack}, such as one created by \code{\link[=delineate]{delineate()}}, or specify layers separately
+with \code{drain} and \code{stream}.}
 
 \item{drainage}{Optional, ignored if \code{x} is provided; a drainage direction raster}
 
-\item{stream}{Optional, ignored if \code{x} is provided; a delineated stream raster, all non-stream cells must be \code{NA}}
+\item{stream}{Optional, ignored if \code{x} is provided; a delineated stream raster, all non-stream
+cells must be \code{NA}}
+
+\item{id}{Optional, ignored if \code{x} is provided; a raster of pixel ids, as, stream}
 
 \item{Tp}{Topology for pixels in the network, e.g., the output from \code{\link[=pixel_topology]{pixel_topology()}}.}
 }
@@ -28,11 +32,12 @@ Build topologies
 Build pixel and reach topologies for delineated streams
 }
 \details{
-The topology is a square matrix showing immediate adjacency between pixels/reaches. Each row/column
-in the topology is a single pixel/reach. Zero entries indicate no adjacency between two nodes. A non-zero entry
-for row \code{i} column \code{j} indicates that \code{i} is upstream of \code{j}. The value in the entry is the reaction length of the
-upstream pixel/reach; this is the midpoint to midpoint distance from i to j. The actual length of each node is stored in the
-\code{length} attribute; thus \code{Tp[i,j] == sum(attr(Tp, "length")[c(i,j)])/2}
+The topology is a square matrix showing immediate adjacency between pixels/reaches.
+Each row/column in the topology is a single pixel/reach. Zero entries indicate no adjacency
+between two nodes. A non-zero entry for row \code{i} column \code{j} indicates that \code{i} is
+upstream of \code{j}. The value in the entry is the reaction length of the upstream pixel/reach;
+this is the midpoint to midpoint distance from i to j. The actual length of each node is
+stored in the \code{length} attribute; thus \code{Tp[i,j] == sum(attr(Tp, "length")[c(i,j)])/2}
 }
 \examples{
 \donttest{

@@ -20,7 +20,7 @@ catchment(
 
 \item{y}{Matrix, 2-columns, giving coordinates at which to compute the catchments}
 
-\item{area}{boolean, if \code{TRUE} returns the catchment area, if \code{FALSE} returns the catchment raster}
+\item{area}{boolean, if \code{TRUE} returns the catchment area, if \code{FALSE} returns a raster}
 
 \item{Tp}{Optional topology, used if type != "points", will be computed if not provided}
 }
@@ -32,7 +32,8 @@ Catchment
 Compute catchment area or catchment spatial objects from delineated streams
 }
 \details{
-The type parameter controls how many catchments/catchment areas are computed (and how long the function will take).
+The type parameter controls how many catchments/catchment areas are computed
+(and how long the function will take).
 \itemize{
 \item \code{'outlet'}: Compute only for the outlet of the entire network
 \item \code{'reach'}: Compute one catchment area per reach, computed at the bottom of the reach

@@ -8,7 +8,7 @@ Produces a vector layer (in \code{sf} format) from a raster stream map as create
 vectorise_stream(x, Tp)
 }
 \arguments{
-\item{x}{A \link{raster} stream map, such as one created by \code{\link[=delineate]{delineate()}}.}
+\item{x}{A \link[raster:stack]{raster::stack}, such as one created by \code{\link[=delineate]{delineate()}}.}
 
 \item{Tp}{A pixel topology}
 }
