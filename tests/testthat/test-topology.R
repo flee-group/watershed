@@ -10,9 +10,11 @@ test_that("toplogy creation", {
 	expect_error(Tr <- reach_topology(kamp_sm, Tp), regex=NA)
 
 	## failure on bad reach numbers
-	strm_test = kamp_sm[['stream']]
+	kmp_test = kamp
+	strm_test = kmp_test[['stream']]
 	strm_test[strm_test == raster::maxValue(strm_test)] = raster::maxValue(strm_test)+1
-	expect_error(reach_topology(Tp = Tp, stream = strm_test), regex="ascending order")
+	kmp_test[["stream"]] = strm_test
+	expect_error(reach_topology(Tp = Tp, x = kmp_test), regex="ascending order")
 
 	## Todo - test correctness of topology against a known case
 	

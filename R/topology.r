@@ -74,23 +74,20 @@ reach_topology = function(x, Tp) {
 	if(!requireNamespace("Matrix"))
 		stop("This functionality requires the Matrix package; please install it and try again.")
 
-	if(!is.null(getOption("mc.cores")) && getOption("mc.cores") > 1) {
-		lapplfun = parallel::mclapply
-	} else {
-		lapplfun = lapply
-	}
+	# if unix, use multiple cores if mc.cores is specified
+	cores = ifelse(.Platform$OS.type == "unix", getOption("mc.cores", 1L), 1L)
 
 	rids = raster::unique(x[['stream']])
 
 	if(!all(rids == 1:length(rids)))
 		stop("Reach IDs not in strict ascending order, they must be renumbered")
 
-	adj = lapplfun(rids, .upstream_r, x = x, Tx = Tp)
+	adj = parallel::mclapply(rids, .upstream_r, x = x, Tx = Tp, mc.cores = cores)
 	adj = do.call(rbind, adj)
 
 	## compute the length of each reach as the sum of all pixels
-	pids = lapplfun(rids, extract_reach, x=x, Tp = Tp)
-	lens = unlist(lapplfun(pids, function(x) sum(Tp[x,,drop=FALSE])))
+	pids = parallel::mclapply(rids, extract_reach, x=x, Tp = Tp, mc.cores = cores)
+	lens = unlist(parallel::mclapply(pids, function(x) sum(Tp[x,,drop=FALSE]), mc.cores = cores))
 
 	## the reaction length is the midpoint to midpoint distance for each reach
 	## actual reach lengths are saved in an attribute
@@ -240,6 +237,14 @@ NULL
 	res_mat = res_mat[order(res_mat[,'from_id']),]
 	res_mat = res_mat[complete.cases(res_mat),]
 	return(res_mat)
+}
+
+#' Return coordinates of just the wet pixels from a stream stack
+#' @param x A stream stack
+#' @return A matrix of coordinates
+#' @export
+stream_coordinates = function(x) {
+	raster::coordinates(x)[!is.na(raster::values(x$stream)),, drop = FALSE]
 }
 
 

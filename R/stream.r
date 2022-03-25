@@ -51,7 +51,7 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	elevation = "dem"
 	accum = "accum"
 	drainage = "drainage"
-	stream= "stream"
+	stream = "stream"
 
 	## launch grass and copy data
 	.start_grass(dem, elevation)
@@ -90,7 +90,7 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 
 	if(!missing(reach_len)) {
 		Tp = pixel_topology(res)
-		res[['stream']] = resize_reaches(res[['stream']], Tp, len = reach_len, ...)
+		res[['stream']] = resize_reaches(res, Tp, len = reach_len, ...)
 	}
 
 	## clean up files
@@ -117,7 +117,7 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 #'     vect = vectorise_stream(x$stream, pixel_topology(x))
 #' }
 #' @export
-vectorise_stream = function(x, Tp) {
+vectorise_stream = function(x, Tp = pixel_topology(x)) {
 
 	rids = raster::unique(x$stream)
 	vals = data.frame(raster::rasterToPoints(x))
@@ -125,11 +125,8 @@ vectorise_stream = function(x, Tp) {
 	# vals = cbind(data.frame(reach_id = x[]), raster::coordinates(x))
 	sf_pts = sf::st_as_sf(vals, coords = c('x', 'y'), crs=sf::st_crs(x))
 
-	if(!is.null(getOption("mc.cores")) && getOption("mc.cores") > 1) {
-		lapplfun = parallel::mclapply
-	} else {
-		lapplfun = lapply
-	}
+	# if unix, use multiple cores if mc.cores is specified
+	cores = ifelse(.Platform$OS.type == "unix", getOption("mc.cores", 1L), 1L)
 
 	# lines = list()
 	# nr = length(rids)
@@ -138,13 +135,19 @@ vectorise_stream = function(x, Tp) {
 	# 	cat(paste0(Sys.time(), "  ", i, "/", nr, " (", round(100 * i/nr, 0), "%)", "\r"))
 	# }
 
-	lines = lapplfun(rids, .pts_to_line, x = x, pts = sf_pts, Tp = Tp)
+	lines = parallel::mclapply(rids, .pts_to_line, x = x, pts = sf_pts, Tp = Tp, mc.cores = cores)
 	do.call(rbind, lines)
 }
 
 .pts_to_line = function(i, x, pts, Tp) {
 	pids = extract_reach(i, x, Tp, sorted = TRUE)
 	pids = c(pids, .downstream(Tp, pids[length(pids)]))
+
+	# in rare cases, end up with a single-pixel reach
+	# if so, we take out upstream pixel to connect it to
+	if(length(pids) == 1) 
+		pids = c(pids, .upstream(Tp, pids)[1])
+
 	xy = sf::st_cast(sf::st_geometry(pts[pids,]), "POINT")
 	# convert each pair of points into a linestring
 	lines = sapply(1:(length(pids)-1), function(j)
@@ -184,7 +187,7 @@ vectorise_stream_old = function(x) {
 }
 
 #' Resize reaches from a delineated stream
-#' @param x A [raster] stream map, such as one created by [delineate()].
+#' @param x A [raster] stream stack, such as one created by [delineate()].
 #' @param len The target length of resized reaches (in map units)
 #' @param min_len How small is the smallest acceptable reach?
 #' @param trim Logical; remove headwater reaches smaller than min_length?
@@ -195,30 +198,26 @@ vectorise_stream_old = function(x) {
 #'     data(kamp_dem)
 #'     x = delineate(kamp_dem)
 #'     Tp = pixel_topology(x)
-#'     x[['stream']] = resize_reaches(x[['stream']], Tp, 1000, 600)
+#'     x[['stream']] = resize_reaches(x, Tp, 1000, 600)
 #' }
 #' @export
 resize_reaches = function(x, Tp, len, min_len = 0.5 * len, trim = TRUE) {
 
-	if(!is.null(getOption("mc.cores")) && getOption("mc.cores") > 1) {
-		lapplfun = parallel::mclapply
-	} else {
-		lapplfun = lapply
-	}
+	# if unix, use multiple cores if mc.cores is specified
+	cores = ifelse(.Platform$OS.type == "unix", getOption("mc.cores", 1L), 1L)
 
-	ids = raster::unique(x)
-	if(!is.vector(ids) || !identical(ids, as.integer(ids)))
-		stop("x must be a single-layer raster stream delineation with integer reach ids as values")
+	stream = x[['stream']]
+	ids = raster::unique(stream)
 
-	pids = lapplfun(ids, extract_reach, stream=x, Tp = Tp, sorted = TRUE)
-	new_reaches = unlist(lapplfun(pids, .resize_r, Tp = Tp, trim = trim, len = len,
+	pids = parallel::mclapply(ids, extract_reach, x=x, Tp = Tp, sorted = TRUE, mc.cores = cores)
+	new_reaches = unlist(parallel::mclapply(pids, .resize_r, Tp = Tp, trim = trim, len = len,
 			min_len = min_len), recursive = FALSE)
-	x = x * NA
+	stream = stream * NA
 	for(i in seq_along(new_reaches))
-		x[new_reaches[[i]]] = i
+		stream[new_reaches[[i]]] = i
 
-	storage.mode(x[]) = 'integer'
-	x
+	storage.mode(stream[]) = 'integer'
+	stream
 }
 
 #' Split a single reach

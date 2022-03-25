@@ -28,26 +28,23 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 	if(missing(Tp) && type != "points")
 		Tp = pixel_topology(x)
 
-	stream_i = which(!is.na(raster::values(x[['stream']])))
-	stream_coords = raster::coordinates(x)[stream_i,,drop = FALSE]
-
 	# if unix, use multiple cores if mc.cores is specified
 	cores = ifelse(.Platform$OS.type == "unix", getOption("mc.cores", 1L), 1L)
 
 	## do nothing if type is points; user must specify y themselves
 	if(type == "outlet") {
-		y = stream_coords[.outlet(Tp),,drop=FALSE]
+		y = stream_coordinates(x)[.outlet(Tp),,drop=FALSE]
 	} else if(type == "reach") {
 		## find the bottom of each reach
 		ids = raster::unique(x[['stream']])
-		pids = parallel::mclapply(ids, extract_reach, stream=x[['stream']], Tp = Tp, 
+		pids = parallel::mclapply(ids, extract_reach, x = x, Tp = Tp, 
 			mc.cores = cores)
 		Tp_r = lapply(pids, function(x) Tp[x,x,drop=FALSE])
 		out_r = lapply(Tp_r, .outlet)
 		out_r = mapply(function(x,y) x[y], pids, out_r)
-		y = stream_coords[out_r,,drop=FALSE]
+		y = stream_coordinates(x)[out_r,,drop=FALSE]
 	} else if(type == "pixel") {
-		y = stream_coords
+		y = stream_coordinates(x)
 	} else {
 		if(!is.matrix(y))
 			y = matrix(y, ncol=2)

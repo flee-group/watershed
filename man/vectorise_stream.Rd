@@ -5,7 +5,7 @@
 \title{Vectorize a stream layer
 Produces a vector layer (in \code{sf} format) from a raster stream map as created by \code{\link[=delineate]{delineate()}}.}
 \usage{
-vectorise_stream(x, Tp)
+vectorise_stream(x, Tp = pixel_topology(x))
 }
 \arguments{
 \item{x}{A \link[raster:stack]{raster::stack}, such as one created by \code{\link[=delineate]{delineate()}}.}

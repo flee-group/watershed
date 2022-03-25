@@ -7,7 +7,7 @@
 resize_reaches(x, Tp, len, min_len = 0.5 * len, trim = TRUE)
 }
 \arguments{
-\item{x}{A \link{raster} stream map, such as one created by \code{\link[=delineate]{delineate()}}.}
+\item{x}{A \link{raster} stream stack, such as one created by \code{\link[=delineate]{delineate()}}.}
 
 \item{Tp}{A pixel topology}
 
@@ -28,6 +28,6 @@ Resize reaches from a delineated stream
     data(kamp_dem)
     x = delineate(kamp_dem)
     Tp = pixel_topology(x)
-    x[['stream']] = resize_reaches(x[['stream']], Tp, 1000, 600)
+    x[['stream']] = resize_reaches(x, Tp, 1000, 600)
 }
 }
