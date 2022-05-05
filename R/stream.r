@@ -91,6 +91,11 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	if(!missing(reach_len)) {
 		Tp = pixel_topology(res)
 		res[['stream']] = resize_reaches(res, Tp, len = reach_len, ...)
+		# some pixels are trimmed, make sure to trim them from id as well
+		j = which(is.na(raster::values(res[['stream']])))
+		res[['id']][j] = NA
+		i = which(!is.na(raster::values(res[['id']])))
+		res[['id']][i] = 1:length(i)
 	}
 
 	## clean up files
