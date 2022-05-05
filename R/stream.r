@@ -209,12 +209,17 @@ resize_reaches = function(x, Tp, len, min_len = 0.5 * len, trim = TRUE) {
 	stream = x[['stream']]
 	ids = raster::unique(stream)
 
+	pix_ids = raster::values(x[['id']])
+
 	pids = parallel::mclapply(ids, extract_reach, x=x, Tp = Tp, sorted = TRUE, mc.cores = cores)
 	new_reaches = unlist(parallel::mclapply(pids, .resize_r, Tp = Tp, trim = trim, len = len,
 			min_len = min_len), recursive = FALSE)
 	stream = stream * NA
-	for(i in seq_along(new_reaches))
-		stream[new_reaches[[i]]] = i
+	for(i in seq_along(new_reaches)) {
+		resized_ids = new_reaches[[i]]
+		j = match(resized_ids, pix_ids)
+		stream[j] = i
+	}
 
 	storage.mode(stream[]) = 'integer'
 	stream
