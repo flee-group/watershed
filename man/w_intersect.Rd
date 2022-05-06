@@ -11,7 +11,7 @@ w_intersect(
   drainage,
   pts,
   buff = 50,
-  rid = "reachID"
+  rid = "reach_id"
 )
 }
 \arguments{

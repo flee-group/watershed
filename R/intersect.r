@@ -33,7 +33,7 @@
 #' @import data.table
 #' @return A data.table summarising the polygons in each layer in areas along the river provided in x.
 #' @export
-w_intersect = function(riv, areas, area_id = NULL, drainage, pts, buff = 50, rid = "reachID") {
+w_intersect = function(riv, areas, area_id = NULL, drainage, pts, buff = 50, rid = "reach_id") {
 	if(!requireNamespace("data.table", quietly = TRUE))
 		stop("package 'data.table' is required for this functionality")
 	if(!requireNamespace("terra", quietly = TRUE))
@@ -51,7 +51,7 @@ w_intersect = function(riv, areas, area_id = NULL, drainage, pts, buff = 50, rid
 	if(methods::is(drainage, "SpatRaster"))
 		drainage = raster::raster(drainage)
 
-	if(class(areas) %in% c("RasterStack", "SpatRaster", "RasterLayer")) {
+	if(any(class(areas) %in% c("RasterStack", "SpatRaster", "RasterLayer"))) {
 		areas = .process_area(areas)
 	} else {
 		areas = .process_area(areas, area_id, drainage)
@@ -84,10 +84,10 @@ w_intersect = function(riv, areas, area_id = NULL, drainage, pts, buff = 50, rid
 	.clean_grass()
 
 	res$category = ""
-	for(lyr in unique(res$layer)) {
-		l = terra::levels(areas[[lyr]])[[1]]
-		i = which(res$layer == lyr)
-		res$category[i] = l[res$value[i] + 1]
+	for(i in 1:length(unique(res$layer))) {
+		l = terra::levels(areas)[[i]]
+		j = which(res$layer == lyr)
+		res$category[j] = l[res$value[j] + 1]
 	}
 	res$value = NULL
 	res
@@ -109,7 +109,7 @@ w_intersect = function(riv, areas, area_id = NULL, drainage, pts, buff = 50, rid
 	rb = sf::st_buffer(r, width)
 	ras = raster::raster(ext=raster::extent(as(rb, "Spatial")), res=terra::res(y))
 	rb = fasterize::fasterize(rb, ras)
-	rb = rast(rb)
+	rb = terra::rast(rb)
 	crs(rb) = crs(y)
 	yy = terra::crop(y, rb)
 	rb = terra::resample(rb, yy)
@@ -122,7 +122,7 @@ w_intersect = function(riv, areas, area_id = NULL, drainage, pts, buff = 50, rid
 	cname = paste0("catchment_", rid)
 	cment = .catchment(st_coordinates(x), cname, dname)
 	# .clean_grass(raster = cname)
-	cment = rast(cment)
+	cment = terra::rast(cment)
 	cment = terra::crop(cment, y)
 
 	# 4. intersect the catchment with the area feature
@@ -201,9 +201,13 @@ setMethod(".process_area", c(x = "list"),
 			x = raster::stack(x)
 			.process_area(x)
 		} else {
-			x = mapply(\(xx, id, ras) callGeneric(xx, id, ras)[[1]], 
-				xx = x, id = id, MoreArgs = list(ras = ras), SIMPLIFY = FALSE)
-			terra::rast(x)
+			stop("list of sf/Spatial input not supported yet")
+			res = list()
+			for(i in 1:length(id))
+				res[i] = callGeneric(x[[i]], id[i], ras)[[1]]
+			# x = mapply(\(xx, id, ras) callGeneric(xx, id, ras)[[1]], 
+				# xx = x, id = id, MoreArgs = list(ras = ras), SIMPLIFY = FALSE)
+			terra::rast()
 		}
 	}
 )
@@ -232,8 +236,8 @@ setMethod(".process_area", c(x = "SpatRaster"),
 				levs = levels[[i]]
 			}
 			vals = match(vals, ll) - 1
-			terra::values(x[[i]]) = vals
-			levels(x[[i]]) = levs
+			terra::values(x)[,i] = vals
+			levels(x)[[i]] = levs
 		}
 		x
 	}
@@ -253,7 +257,7 @@ setMethod(".process_area", c(x = "sf"),
 		x[[fieldname]] = factor(x[[id]])
 		tab = levels(x[[fieldname]])
 		x = terra::rast(fasterize::fasterize(x, raster = ras, field = fieldname))
-		callGeneric(x, tab)
+		callGeneric(x, list(tab))
 	}
 )
 
