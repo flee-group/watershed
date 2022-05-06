@@ -85,6 +85,7 @@ w_intersect = function(riv, areas, area_id = NULL, drainage, pts, buff = 50, rid
 
 	res$category = ""
 	for(i in 1:length(unique(res$layer))) {
+		lyr = unique(res$layer)[i]
 		l = terra::levels(areas)[[i]]
 		j = which(res$layer == lyr)
 		res$category[j] = l[res$value[j] + 1]
