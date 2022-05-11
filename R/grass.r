@@ -29,7 +29,7 @@
 #' Add a raster to grass
 #' @param x A [raster::raster] or [sp::SpatialGridDataFrame]
 #' @param name The name of the layer in grass
-#' @param flags Any flags to pass to [rgrass7::writeRAST]
+#' @param flags Any flags to pass to [rgrass7::write_RAST]
 #' @param overwrite Should the file be overwritten if it exists
 #' @keywords internal
 .add_raster = function(x, name, flags, overwrite = TRUE) {
@@ -39,7 +39,7 @@
 		flags = list()
 	if(overwrite)
 		flags = c(flags, "overwrite")
-	rgrass7::writeRAST(x, name, flags = unlist(flags))
+	rgrass7::write_RAST(x, name, flags = unlist(flags))
 	ws_env$rasters = c(ws_env$rasters, name)
 }
 
@@ -119,10 +119,11 @@
 #' Try to locate a user's GRASS GIS installation
 #'
 #' Locates a grass installation in common locations on Mac, Windows, and Linux. This is normally
-#' run automatically when the package is loaded. If multiple
-#' installations are present, the function will prefer 7.8, 7.6, 7.4, and then whatever is most 
-#' recent.
-#'
+#' run automatically when the package is loaded. If multiple installations are present, then
+#' we preferably take whichever version is called "grass" and is in the users PATH.
+#' If that doesn't work, we look for grass80, grass78, grass76, and grass74 in the path, in that
+#' order.
+#' 
 #' In some (many?) cases, this function will fail to find a grass installation, or users may wish
 #' to specify a different version than what is detected automatically. In these cases, it is 
 #' possible to manually specify the grass location using `options(gisBase = "path/to/grass")`.
@@ -133,9 +134,14 @@ find_grass = function() {
 	os = Sys.info()['sysname']
 	gisBase = NULL
 
+	## changes to make
+	## as a first go, do the linux thing for all OSs, look for grass, then grass78, etc
+	## if all NAs, then fall back to looking in some known locations, like /usr/local/bin/grass
+	## or various C: locations on Windows
+
 	if(grepl("[Ll]inux", os)) {
 		## try a system call
-		gisBase = sapply(c("grass78", "grass76", "grass74"), function(gr) {
+		gisBase = sapply(c("grass", "grass80", "grass78", "grass76", "grass74"), function(gr) {
 			tryCatch(system2(gr, args = c("--config", "path"), stdout = TRUE, stderr = TRUE),
 					 error = function(e) NA)
 		})

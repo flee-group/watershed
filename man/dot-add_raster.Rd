@@ -11,7 +11,7 @@
 
 \item{name}{The name of the layer in grass}
 
-\item{flags}{Any flags to pass to \link[rgrass7:readRAST]{rgrass7::writeRAST}}
+\item{flags}{Any flags to pass to \link[rgrass7:readRAST]{rgrass7::write_RAST}}
 
 \item{overwrite}{Should the file be overwritten if it exists}
 }

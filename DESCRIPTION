@@ -1,6 +1,6 @@
 Package: watershed
 Title: Tools for Watershed Delineation
-Version: 0.4.4
+Version: 0.4.5
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -21,12 +21,12 @@ Imports:
     raster (>= 3.3),
     sf (>= 0.9),
     units (>= 0.6),
+    terra (>= 1.5),
     Matrix (>= 1.2)
 SystemRequirements:
 	GRASS GIS (>= 7.4)
 Suggests: 
     data.table (>= 1.14),
-    terra (>= 1.4),
     knitr,
     rmarkdown,
     testthat,
