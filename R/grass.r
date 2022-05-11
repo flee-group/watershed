@@ -131,56 +131,31 @@
 #' @return The path to the user's grass location, or NULL if not found
 #' @export
 find_grass = function() {
-	os = Sys.info()['sysname']
-	gisBase = NULL
+	gisBase = NA
 
-	## changes to make
-	## as a first go, do the linux thing for all OSs, look for grass, then grass78, etc
-	## if all NAs, then fall back to looking in some known locations, like /usr/local/bin/grass
-	## or various C: locations on Windows
+	if(.Platform$OS.type == "unix") {
+		grass_names = c("grass", "grass80", "grass78", "grass76", "grass74")
+		paths = c("", "/usr/local/bin/", "/opt/local/bin/")
 
-	if(grepl("[Ll]inux", os)) {
-		## try a system call
-		gisBase = sapply(c("grass", "grass80", "grass78", "grass76", "grass74"), function(gr) {
-			tryCatch(system2(gr, args = c("--config", "path"), stdout = TRUE, stderr = TRUE),
-					 error = function(e) NA)
-		})
-		# take the first (most preferred) non-na
-		gisBase = gisBase[!is.na(gisBase)][1]
+		gb = unlist(lapply(paths, function(p) {
+			lapply(grass_names, function(gr) {
+				tryCatch(system2(paste0(p, gr), args = c("--config", "path"), 
+					stdout = TRUE, stderr = TRUE), error = function(e) NA)
+			})
+		}))
+		if(!all(is.na(gb)))
+			gisBase = gb[!is.na(gb)][1]
 	} else {
-		if(grepl("[Dd]arwin", os)) {
-			appPath = "/Applications"
-			suffix = "Contents/Resources"
-		} else if(grepl("[Ww]indows", os)) {
-			## currently supports the OSGEO4W64 installation
-			appPath = file.path("C:", "OSGEO4W64", "apps", "grass")
-			suffix = NA
-		}
-		grassBase = list.files(appPath, pattern='grass', ignore.case = TRUE)
-		grassBase = .preferred_grass_version(grassBase)
-		gisBase = ifelse(is.na(suffix), file.path(appPath, grassBase), 
-			file.path(appPath, grassBase, suffix))
-	}
-	return(gisBase)
-}
+		## windows
+		appPath = c(file.path("C:", "OSGEO4W64", "apps", "grass"),
+			file.path("C:", "Program Files", "GRASS GIS 8.0"),
+			file.path("C:", "Program Files", "GRASS GIS 7.8"),
+			file.path("C:", "Program Files", "GRASS GIS 7.6"))
 
-#' Choose a preferred version of grass from a list of options
-#' @param x A vector of grass home directories
-#' @return The most preferred from x
-#' @keywords internal
-.preferred_grass_version = function(x) {
-	gVersion = as.numeric(sub(".*(7)\\.?([0-9]).*(\\.app)?", "\\1\\2", x))
-
-	## grass78 preferred on R version 4 and above, otherwise 76
-	if(grepl('4', version['major']) && 78 %in% gVersion) {
-		res = x[gVersion == 78]
-	} else if(76 %in% gVersion) {
-		res = x[gVersion == 76]
-	} else if(74 %in% gVersion) {
-		res = x[gVersion == 74]
-	} else {
-		res = x[which.max(gVersion)]
+		foundGrass = sapply(appPath, file.exists)
+		if(any(foundGrass))
+			gisBase = appPath[foundGrass][1]
 	}
-	res
+	gisBase
 }
 

@@ -17,6 +17,8 @@
 	if(is.null(gisBase) | is.na(gisBase)) {
 		warning("Could not automatically detect GRASS, see ?find_grass")
 	} else {
+		message("Using grass: ", gisBase)
+		message("see ?find_grass to override this default")
 		options(gisBase = gisBase)
 	}
 }
