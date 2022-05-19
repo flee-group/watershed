@@ -39,7 +39,7 @@
 		flags = list()
 	if(overwrite)
 		flags = c(flags, "overwrite")
-	rgrass7::write_RAST(x, name, flags = unlist(flags))
+	rgrass7::write_RAST(x, name, flags = unlist(flags), verbose = FALSE)
 	ws_env$rasters = c(ws_env$rasters, name)
 }
 
