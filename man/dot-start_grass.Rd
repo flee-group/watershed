@@ -15,7 +15,7 @@
 )
 }
 \arguments{
-\item{layer}{A \link[raster:raster]{raster::raster} object to write to the grass session}
+\item{layer}{A \link{SpatRaster} or \link{RasterLayer} object to write to the grass session}
 
 \item{layer_name}{Name of the layer in the grass environment}
 

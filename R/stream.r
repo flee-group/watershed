@@ -217,8 +217,9 @@ resize_reaches = function(x, Tp, len, min_len = 0.5 * len, trim = TRUE) {
 	pix_ids = raster::values(x[['id']])
 
 	pids = parallel::mclapply(ids, extract_reach, x=x, Tp = Tp, sorted = TRUE, mc.cores = cores)
+
 	new_reaches = unlist(parallel::mclapply(pids, .resize_r, Tp = Tp, trim = trim, len = len,
-			min_len = min_len), recursive = FALSE)
+			min_len = min_len, mc.cores = cores), recursive = FALSE)
 	stream = stream * NA
 	for(i in seq_along(new_reaches)) {
 		resized_ids = new_reaches[[i]]
@@ -270,9 +271,17 @@ resize_reaches = function(x, Tp, len, min_len = 0.5 * len, trim = TRUE) {
 	## outlet of the whole river network will end up with an id of 0; fix it
 	new_rids[new_rids == 0] = 1
 
-	# any pixels given a new id > nr are short headwater pixels that should be dropped
-	new_rids = new_rids[new_rids <= nr]
-
+	# any pixels given a new id > nr are short headwater pixels that should be dropped (if trimming)
+	# or should be added to the last reach (if not trimming)
+	if(any(new_rids > nr)) {
+		if(trim) {
+			new_rids = new_rids[new_rids <= nr]
+		}
+		else {
+			new_rids[new_rids > nr] = nr
+		}
+	}
+	
 	new_reaches = lapply(unique(new_rids), function(i) ids[new_rids == i])
 
 	## if we are trimming, drop the headwater if it is too short

@@ -120,6 +120,9 @@ extract_reach = function(i, x, Tp, sorted = FALSE) {
 	if(sorted && length(pids) > 1) {
 		pid_s = numeric(length(pids))
 		Tp_r = Tp[pids, pids, drop=FALSE]
+		## check that the reach has a valid topology
+		tryCatch(.check_topology(Tp_r, warn = TRUE), warning = function(w)  {
+			stop("Invalid topology for reach ", i, ": ", w$message)})
 		pid_s[1] = .headwater(Tp_r)
 		for(i in 2:length(pid_s))
 			pid_s[i] = .downstream(Tp_r, pid_s[i-1])
@@ -271,4 +274,8 @@ stream_coordinates = function(x) {
 
 	if(any(cs > 2))
 		fun("Invalid topology; ", sum(cs > 2), " nodes are downstream of more than two nodes.")
+
+	discon = sum(cs == 0 & rs == 0)
+	if(discon > 0)
+		fun("Invalid topology; ", discon, " nodes are disconnected from all other nodes")
 }

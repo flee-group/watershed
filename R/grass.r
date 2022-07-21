@@ -1,6 +1,6 @@
 #' Start grass in a simple way
 #'
-#' @param layer A [raster::raster] object to write to the grass session
+#' @param layer A [SpatRaster] or [RasterLayer] object to write to the grass session
 #' @param layer_name Name of the layer in the grass environment
 #' @param gisBase character; the location of the GRASS installation
 #' @param home Location to write GRASS settings
@@ -10,14 +10,17 @@
 #' @keywords internal
 .start_grass = function(layer, layer_name, gisBase, home = tempdir(), gisDbase = home,
 						location = 'watershed', mapset = 'PERMANENT') {
+	if("SpatRaster" %in% class(layer))
+		layer = raster::raster(layer)
 	if(missing(gisBase))
 		gisBase = getOption("gisBase")
 	rgrass7::initGRASS(gisBase, home=home, gisDbase = gisDbase, location = location,
 					   mapset = mapset, override = TRUE)
-	err <- tryCatch(rgrass7::execGRASS("g.proj", flags = "c", proj4 = sp::proj4string(layer), 
-		intern=TRUE),
+	proj = raster::wkt(layer)
+	err = tryCatch(
+		rgrass7::execGRASS("g.proj", flags = "c", wkt = "-", Sys_input = proj, intern=TRUE),
 		error = function(e) stop(e),
-		warning = function(w) if(!grepl("Datum.+not recognised", w$message)) warning(w))
+		warning = function(w) if(!grepl("file not found for location", w$message)) warning(w))
 	ext = as.character(as.vector(raster::extent(layer)))
 	rasres = as.character(raster::res(layer))
 	rgrass7::execGRASS("g.region", n = ext[4], s = ext[3], e = ext[2], w = ext[1],
@@ -33,6 +36,8 @@
 #' @param overwrite Should the file be overwritten if it exists
 #' @keywords internal
 .add_raster = function(x, name, flags, overwrite = TRUE) {
+	if("SpatRaster" %in% class(x))
+		x = raster::raster(x)
 	if("RasterLayer" %in% class(x))
 		x = as(x, "SpatialGridDataFrame")
 	if(missing(flags))
