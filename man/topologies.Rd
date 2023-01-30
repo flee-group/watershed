@@ -12,8 +12,8 @@ pixel_topology(x, drainage, stream, id)
 reach_topology(x, Tp)
 }
 \arguments{
-\item{x}{A \link[raster:stack]{raster::stack}, such as one created by \code{\link[=delineate]{delineate()}}, or specify layers separately
-with \code{drain} and \code{stream}.}
+\item{x}{A \link[terra:SpatRaster-class]{terra::SpatRaster}, such as one created by \code{\link[=delineate]{delineate()}}, or specify layers separately
+with \code{drainage} and \code{stream}.}
 
 \item{drainage}{Optional, ignored if \code{x} is provided; a drainage direction raster}
 

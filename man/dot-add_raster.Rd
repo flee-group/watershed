@@ -7,11 +7,11 @@
 .add_raster(x, name, flags, overwrite = TRUE)
 }
 \arguments{
-\item{x}{A \link[raster:raster]{raster::raster} or \link[sp:SpatialGridDataFrame]{sp::SpatialGridDataFrame}}
+\item{x}{A \link[terra:SpatRaster-class]{terra::SpatRaster}}
 
 \item{name}{The name of the layer in grass}
 
-\item{flags}{Any flags to pass to \link[rgrass7:readRAST]{rgrass7::write_RAST}}
+\item{flags}{Any flags to pass to \link[rgrass:readRAST]{rgrass::write_RAST}}
 
 \item{overwrite}{Should the file be overwritten if it exists}
 }

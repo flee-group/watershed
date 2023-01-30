@@ -31,7 +31,9 @@ Compute discharge and hyrdaulic geometry
 Computes discharge from catchment area as \eqn{\log Q = \log b + m \log A}.
 If a single point in \code{calib} is included, the relationship will be re-parameterised by
 adjusting the intercept parameter \code{b} so that the calibration point falls on the line
-(while keeping the slope the same).\preformatted{	With multiple points, a regression model is fit. If `use_prior == TRUE`, this is a Bayesian model
+(while keeping the slope the same).
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{	With multiple points, a regression model is fit. If `use_prior == TRUE`, this is a Bayesian model
 	using the parameters from Burgers et al (2014). These priors are calibrated from a variety of rivers,
 	and the prior is quite strong, so it is possible with a small number of calibration points that the line
 	is quite far from the calibration. In this case, either re-run this function with a single calibration point,
@@ -41,7 +43,7 @@ adjusting the intercept parameter \code{b} so that the calibration point falls o
 	\eqn{m^2}, and discharge will be computed in \eqn{m^3 s^{-1}}.
 
 	Following computation of discharge, other aspects of hydralic geometry are computed following Raymond et al (2012).
-}
+}\if{html}{\out{</div>}}
 }
 \examples{
 \donttest{

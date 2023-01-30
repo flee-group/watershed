@@ -105,6 +105,16 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 
 	## clean up files
 	.clean_grass()
+	
+	## verify that we return the same projection that we got in
+	if(!identical(terra::crs(res), terra::crs(dem))) {
+		if(is.na(terra::crs(res)) | terra::crs(res) == "") {
+			terra::crs(res) = terra::crs(dem)
+		} else {
+			res = terra::project(res, dem)
+		}
+			
+	}
 
 	if(!missing(file))
 		res = terra::writeRaster(res, filname = file)

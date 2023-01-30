@@ -14,7 +14,7 @@ catchment(
 )
 }
 \arguments{
-\item{x}{A \link[raster:stack]{raster::stack}, such as one created by \code{\link[=delineate]{delineate()}}.}
+\item{x}{A \link[terra:SpatRaster-class]{terra::SpatRaster} stack, such as one created by \code{\link[=delineate]{delineate()}}.}
 
 \item{type}{The scale at which to compute catchments, see 'details'}
 
@@ -25,7 +25,7 @@ catchment(
 \item{Tp}{Optional topology, used if type != "points", will be computed if not provided}
 }
 \value{
-
+A \link[terra:SpatRaster-class]{terra::SpatRaster} if \code{area == FALSE}, otherwise a vector of catchment areas
 }
 \description{
 Catchment

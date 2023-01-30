@@ -15,7 +15,7 @@ delineate(
 )
 }
 \arguments{
-\item{dem}{A \link[raster:raster]{raster::raster}; a digital elevation model.}
+\item{dem}{A \link[terra:SpatRaster-class]{terra::SpatRaster}; a digital elevation model.}
 
 \item{threshold}{The minimum size of a delineated catchment; units are in dem_units^2
 (e.g., m^2); default 10 km^2.}
@@ -31,7 +31,7 @@ delineate(
 \item{...}{If \code{reach_len} is specified, additional parameters to be passed to \code{\link[=resize_reaches]{resize_reaches()}}}
 }
 \value{
-A \code{\link[raster:stack]{raster::stack()}}, containing the drainage map, the flow accumulation map, and the
+A \link[terra:SpatRaster-class]{terra::SpatRaster}, containing the drainage map, the flow accumulation map, and the
 }
 \description{
 Delineate streams from an elevation model

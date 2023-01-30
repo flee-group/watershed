@@ -7,7 +7,7 @@
 resize_reaches(x, Tp, len, min_len = 0.5 * len, trim = TRUE)
 }
 \arguments{
-\item{x}{A \link{raster} stream stack, such as one created by \code{\link[=delineate]{delineate()}}.}
+\item{x}{A \link[terra:SpatRaster-class]{terra::SpatRaster} stream stack, such as one created by \code{\link[=delineate]{delineate()}}.}
 
 \item{Tp}{A pixel topology}
 

@@ -14,7 +14,7 @@
 #'    * `'reach'`: Compute one catchment area per reach, computed at the bottom of the reach
 #'    * `'points'`: Compute catchment for user-specified points, given by the `y` parameter
 #'    * `'pixel'`: Compute catchment area for each pixel; this can take a very long time
-#' @return
+#' @return A [terra::SpatRaster] if `area == FALSE`, otherwise a vector of catchment areas
 #' @examples
 #' \donttest{
 #'     data(kamp_dem)
