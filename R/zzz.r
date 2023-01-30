@@ -1,6 +1,5 @@
 .onLoad = function(libname, pkgname) {
 	Sys.setenv("GRASS_VERBOSE"=0)
-	rgrass7::use_sp()
 
 	if(is.null(getOption("mc.cores")) && !grepl("[Ww]indows", Sys.info()['sysname'])) {
 		message("For faster performance of some functions on a machine with lots of RAM, you can set")

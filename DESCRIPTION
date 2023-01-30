@@ -1,6 +1,6 @@
 Package: watershed
 Title: Tools for Watershed Delineation
-Version: 0.4.9
+Version: 0.4.9.9000
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -15,16 +15,16 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Depends:
-    R (>= 4.1.0)
+    R (>= 4.2)
 Imports:
-    rgrass7 (>= 0.2),
-    raster (>= 3.3),
-    sf (>= 0.9),
-    units (>= 0.6),
-    terra (>= 1.5),
-    Matrix (>= 1.2)
+    rgrass (>= 0.3),
+    raster (>= 3.6),
+    sf (>= 1.0),
+    units (>= 0.8),
+    terra (>= 1.7),
+    Matrix (>= 1.5)
 SystemRequirements:
-	GRASS GIS (>= 7.4)
+	GRASS GIS (>= 8.0)
 Suggests: 
     data.table (>= 1.14),
     knitr,

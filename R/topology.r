@@ -2,8 +2,8 @@
 #' @rdname topologies
 #' @title Build topologies
 #' Build pixel and reach topologies for delineated streams
-#' @param x A [raster::stack], such as one created by [delineate()], or specify layers separately 
-#'     with `drain` and `stream`.
+#' @param x A [terra::SpatRaster], such as one created by [delineate()], or specify layers separately 
+#'     with `drainage` and `stream`.
 #' @param drainage Optional, ignored if `x` is provided; a drainage direction raster
 #' @param stream Optional, ignored if `x` is provided; a delineated stream raster, all non-stream 
 #'		cells must be `NA`
@@ -29,28 +29,27 @@ NULL
 #' @rdname topologies
 #' @export
 pixel_topology = function(x, drainage, stream, id) {
-	if(!requireNamespace("Matrix"))
-		stop("This functionality requires the Matrix package; please install it and try again.")
-
 	if(! missing(x)) {
 		stream = x[['stream']]
 		drainage = x[['drainage']]
 		id = x[['id']]
 	}
 
-	nr = raster::nrow(drainage)
-	nc = raster::ncol(drainage)
-	npix = sum(!is.na(raster::values(id)))
-	vals = raster::values(raster::stack(list(
-		x = raster::raster(matrix(1:nc, nrow=nr, ncol=nc, byrow=TRUE), template = drainage),
-		y = raster::raster(matrix(1:nr, nrow=nr, ncol=nc), template = drainage),
-		id = id,
-		drainage = drainage,
-		stream = stream)))
+	nr = terra::nrow(drainage)
+	nc = terra::ncol(drainage)
+	npix = sum(!is.na(terra::values(id)))
+	proj = terra::crs(drainage)
+	ex = terra::ext(drainage)
+	vals = as.data.frame(terra::rast(list(
+				x = terra::rast(matrix(1:nc, nrow=nr, ncol=nc, byrow=TRUE), crs = proj, extent = ex),
+				y = terra::rast(matrix(1:nr, nrow=nr, ncol=nc), crs = proj, extent = ex),
+				id = id,
+				drainage = drainage,
+				stream = stream)))
 	vals = vals[complete.cases(vals),]
 
 	## compute the length of each pixel
-	r = raster::res(stream)
+	r = terra::res(stream)
 	vals = cbind(vals, len = ifelse(vals[, 'drainage'] %in% c(1,3,5,7), sqrt(r[1]^2 + r[2]^2),
 									ifelse(vals[, 'drainage'] %in% c(2, 6), r[2], r[1])))
 	xy = .flowto(vals, xmax = nc, ymax = nr)
@@ -116,10 +115,10 @@ reach_topology = function(x, Tp) {
 #' }
 #' @export
 extract_reach = function(i, x, Tp, sorted = FALSE) {
-	pids = x$id[x$stream == i]
+	pids = x$id[x$stream == i][,1]
 	if(sorted && length(pids) > 1) {
 		pid_s = numeric(length(pids))
-		Tp_r = Tp[pids, pids, drop=FALSE]
+		Tp_r = Tp[pids, pids, drop = FALSE]
 		## check that the reach has a valid topology
 		tryCatch(.check_topology(Tp_r, warn = TRUE), warning = function(w)  {
 			stop("Invalid topology for reach ", i, ": ", w$message)})
@@ -269,7 +268,7 @@ stream_coordinates = function(x) {
 	if(any(rs > 1))
 		fun("Invalid topology; ", sum(rs > 1), " nodes are upstream of more than one node.")
 
-	if(sum(rs == 0 && cs != 0) > 1)
+	if(sum(rs == 0 & cs != 0) > 1)
 		fun("Invalid topology; ", sum(rs == 0), " outlets found.")
 
 	if(any(cs > 2))

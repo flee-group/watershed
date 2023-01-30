@@ -2,7 +2,7 @@
 #' @rdname catchment
 #' @title Catchment
 #' Compute catchment area or catchment spatial objects from delineated streams
-#' @param x A [raster::stack], such as one created by [delineate()].
+#' @param x A [terra::SpatRaster] stack, such as one created by [delineate()].
 #' @param type The scale at which to compute catchments, see 'details'
 #' @param y Matrix, 2-columns, giving coordinates at which to compute the catchments
 #' @param area boolean, if `TRUE` returns the catchment area, if `FALSE` returns a raster
@@ -36,7 +36,7 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 		y = stream_coordinates(x)[.outlet(Tp),,drop=FALSE]
 	} else if(type == "reach") {
 		## find the bottom of each reach
-		ids = raster::unique(x[['stream']])
+		ids = terra::unique(x[['stream']])
 		pids = parallel::mclapply(ids, extract_reach, x = x, Tp = Tp, 
 			mc.cores = cores)
 		Tp_r = lapply(pids, function(x) Tp[x,x,drop=FALSE])
@@ -66,12 +66,12 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 			MoreArgs = list(drain_name = drainage), SIMPLIFY = FALSE)
 		if(area) {
 			res = sapply(res, function(x) 
-				sum(raster::values(x), na.rm = TRUE) * prod(raster::res(x)))
+				sum(terra::values(x), na.rm = TRUE) * prod(terra::res(x)))
 		} else if(length(res) == 1) {
 			res = res[[1]]
 			names(res) = "catchment"
 		} else {
-			res = raster::stack(res)
+			res = terra::rast(res)
 		}
 	}
 	.clean_grass()
@@ -92,7 +92,7 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 #' * `.catchment` runs `.do_catchment` and then extracts and returns the raster from GRASS
 .catchment_area = function(y, out_name, drain_name) {
 	.do_catchment(y, out_name, drain_name)
-	res = capture.output(rgrass7::execGRASS("r.stats", flags=c("overwrite", "quiet", "a"), 
+	res = capture.output(rgrass::execGRASS("r.stats", flags=c("overwrite", "quiet", "a"), 
 		input = out_name))
 	.clean_grass(raster = out_name, vector = NA)
 	pat = "^1 ([0-9//.]+)"
@@ -113,7 +113,7 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 #' @rdname catchment_area
 #' @keywords internal
 .do_catchment = function(y, out_name, drain_name) {
-	rgrass7::execGRASS("r.water.outlet", flags=c("overwrite", "quiet"), input=drain_name, 
+	rgrass::execGRASS("r.water.outlet", flags=c("overwrite", "quiet"), input=drain_name, 
 		output = out_name, coordinates = y)
 	if(!(out_name %in% ws_env$rasters))
 		ws_env$rasters = c(ws_env$rasters, out_name)

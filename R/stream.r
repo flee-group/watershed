@@ -1,5 +1,5 @@
 #' Delineate streams from an elevation model
-#' @param dem A [raster::raster]; a digital elevation model.
+#' @param dem A [terra::SpatRaster]; a digital elevation model.
 #' @param threshold The minimum size of a delineated catchment; units are in dem_units^2 
 #'		(e.g., m^2); default 10 km^2.
 #' @param pretty Should flat areas be made prettier? Corresponds to r.watershed -b flag
@@ -24,7 +24,7 @@
 #' It is recommended to specify the `file` parameter (including the extension to specify
 #' file format; e.g., .tif, .grd). If not specified, a temp file will be created and will be
 #' lost at the end of the R session.
-#' @return A [raster::stack()], containing the drainage map, the flow accumulation map, and the 
+#' @return A [terra::SpatRaster], containing the drainage map, the flow accumulation map, and the 
 #"		delineated streams.
 #' @examples
 #' \donttest{
@@ -33,15 +33,15 @@
 #' }
 #' @export
 delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, reach_len, ...) {
-	cell_area = prod(raster::res(dem))
+	cell_area = prod(terra::res(dem))
 	threshold_cell = floor(threshold/cell_area)
 
 	if(threshold_cell < 1)
 		stop("Threshold too small, resulting in zero pixels chosen (threshold must be >", 
-			" prod(raster::res(dem)")
+			" prod(terra::res(dem)")
 
-	if(threshold_cell / raster::ncell(dem) < 0.0001)
-		warning("Small threshold; excessive computation time and memory usage are possible if",
+	if(threshold_cell / terra::ncell(dem) < 0.0001)
+		warning("Small threshold; excessive computation time and memory usage are possible if ",
 			"threshold not increased")
 
 	flags = c("overwrite", "quiet")
@@ -57,7 +57,7 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	.start_grass(dem, elevation)
 
 	## perform computation
-	rgrass7::execGRASS("r.watershed", flags=flags, elevation=elevation, 
+	rgrass::execGRASS("r.watershed", flags=flags, elevation=elevation, 
 		threshold = threshold_cell, accumulation = accum, drainage = drainage, stream = stream)
 
 	# make sure to add the names of created rasters to the list of layers
@@ -67,23 +67,28 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	res = .read_rasters(c(accum, drainage, stream))
 
 	## Clip to a single network
-	if(length(outlet) == 1 && is.na(outlet))
-		outlet = matrix(raster::coordinates(res)[which.max(raster::values(res$accum)),], ncol=2)
-	catch = catchment(res, type = "points", y = outlet, area = FALSE)
+	if(length(outlet) == 1 && is.na(outlet)) {
+		res_df = as.data.frame(res, xy=TRUE)
+		res_df = res_df[complete.cases(res_df) & accum > 0,]
+		outlet = as.matrix(res_df[which.max(res_df$accum), c('x', 'y')])
+	}
+	catch = suppressWarnings(catchment(res, type = "points", y = outlet, area = FALSE))
 
-	catch = raster::trim(catch)
-	res = suppressWarnings(raster::crop(res, catch))
-	stream_clip = raster::mask(res$stream, catch)
+	catch = terra::trim(catch)
+	res = terra::crop(res, catch)
+	stream_clip = terra::mask(res$stream, catch)
 	id = stream_clip
-	i = which(!is.na(raster::values(id)))
+	i = which(!is.na(terra::values(id)))
 	id[i] = 1:length(i)
-	res = raster::dropLayer(res, which(names(res) == stream))
-	res = raster::addLayer(res, stream_clip, catch, id)
+	
+	# renumber streams to go from 1:nreaches
+	vv = terra::values(stream_clip)[i]
+	vv = as.integer(as.factor(vv))
+	stream_clip[i] = vv
+	
+	res = res[[-(which(names(res) == stream))]]
+	res = c(res, stream_clip, catch, id)
 	names(res) = c("accum", "drainage", "stream", "catchment", "id")
-
-	## renumber reaches to go from 1:nreaches, make sure streams are integers
-	res[['stream']] = raster::match(res[['stream']],
-					raster::unique(res[['stream']]))
 	storage.mode(res[['stream']][]) = 'integer'
 	storage.mode(res[['id']][]) = 'integer'
 
@@ -92,9 +97,9 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 		Tp = pixel_topology(res)
 		res[['stream']] = resize_reaches(res, Tp, len = reach_len, ...)
 		# some pixels are trimmed, make sure to trim them from id as well
-		j = which(is.na(raster::values(res[['stream']])))
+		j = which(is.na(terra::values(res[['stream']])))
 		res[['id']][j] = NA
-		i = which(!is.na(raster::values(res[['id']])))
+		i = which(!is.na(terra::values(res[['id']])))
 		res[['id']][i] = 1:length(i)
 	}
 
@@ -102,7 +107,7 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 	.clean_grass()
 
 	if(!missing(file))
-		res = raster::writeRaster(res, filname = file)
+		res = terra::writeRaster(res, filname = file)
 
 	res
 }
@@ -112,7 +117,7 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 #' @rdname vectorise_stream
 #' @title Vectorize a stream layer
 #' Produces a vector layer (in `sf` format) from a raster stream map as created by [delineate()].
-#' @param x A [raster::stack], such as one created by [delineate()].
+#' @param x A [terra::SpatRaster], such as one created by [delineate()].
 #' @param Tp A pixel topology
 #' @return An `sf` stream layer
 #' @examples
@@ -124,10 +129,9 @@ delineate = function(dem, threshold = 1e6, pretty = FALSE, file, outlet = NA, re
 #' @export
 vectorise_stream = function(x, Tp = pixel_topology(x)) {
 
-	rids = raster::unique(x$stream)
-	vals = data.frame(raster::rasterToPoints(x))
+	rids = terra::unique(x$stream)[,1]
+	vals = as.data.frame(x, xy = TRUE)
 	vals = subset(vals, !is.na(id))
-	# vals = cbind(data.frame(reach_id = x[]), raster::coordinates(x))
 	sf_pts = sf::st_as_sf(vals, coords = c('x', 'y'), crs=sf::st_crs(x))
 
 	# if unix, use multiple cores if mc.cores is specified
@@ -164,35 +168,10 @@ vectorise_stream = function(x, Tp = pixel_topology(x)) {
 	mline
 }
 
-#' @name vectorise_stream_old
-#' @rdname vectorise_stream_old
-#' @title Vectorize a stream layer
-#' Deprecated, use vectorise_stream()..
-#' @return An `sf` stream layer
-#' @keywords internal
-vectorise_stream_old = function(x) {
-	inpname = "stream"
-	outname = "stream_thin"
-	vectname = "stream_vect"
 
-	.start_grass(x, inpname)
-
-	flags = c("overwrite", "quiet")
-
-	rgrass7::execGRASS("r.thin", flags=flags, input=inpname, output = outname)
-	ws_env$rasters = c(ws_env$rasters, outname)
-
-	rgrass7::execGRASS("r.to.vect", flags=flags, input=outname, output = vectname,
-					   type="line", column="reach_id")
-	ws_env$vectors = c(ws_env$vectors, vectname)
-	vect = .read_vector(vectname)
-
-	.clean_grass()
-	vect
-}
 
 #' Resize reaches from a delineated stream
-#' @param x A [raster] stream stack, such as one created by [delineate()].
+#' @param x A [terra::SpatRaster] stream stack, such as one created by [delineate()].
 #' @param len The target length of resized reaches (in map units)
 #' @param min_len How small is the smallest acceptable reach?
 #' @param trim Logical; remove headwater reaches smaller than min_length?
@@ -212,9 +191,9 @@ resize_reaches = function(x, Tp, len, min_len = 0.5 * len, trim = TRUE) {
 	cores = ifelse(.Platform$OS.type == "unix", getOption("mc.cores", 1L), 1L)
 
 	stream = x[['stream']]
-	ids = raster::unique(stream)
+	ids = terra::unique(stream)[,1]
 
-	pix_ids = raster::values(x[['id']])
+	pix_ids = terra::values(x[['id']])
 
 	pids = parallel::mclapply(ids, extract_reach, x=x, Tp = Tp, sorted = TRUE, mc.cores = cores)
 
