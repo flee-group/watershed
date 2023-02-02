@@ -31,7 +31,7 @@
 	if(overwrite)
 		flags = c(flags, "overwrite")
 	flags = c(flags, 'o') # rgrass keeps dropping datum info, resulting in clashes with grass location proj
-	rgrass::write_RAST(x, name, flags = unlist(flags), verbose = FALSE)
+	suppressWarnings(rgrass::write_RAST(x, name, flags = unlist(flags), verbose = FALSE))
 	ws_env$rasters = c(ws_env$rasters, name)
 }
 
@@ -103,6 +103,10 @@
 }
 
 
+#' List grass files
+.list_grass = function(type = c("raster", "vector")) {
+	rgrass::execGRASS("g.list", flags=c("m"), type = type)
+}
 
 #' Try to locate a user's GRASS GIS installation
 #'

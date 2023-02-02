@@ -55,7 +55,8 @@ catchment = function(x, type=c("outlet", "reach",  "points", "pixel"), y, area =
 
 	drainage = "drainage"
 	catch_names = paste("catchment", seq_along(y), sep='_')
-	.start_grass(x[['drainage']], drainage)
+	dr = terra::writeRaster(x$drainage, tempfile(fileext = ".tif"))
+	capture.output(.start_grass(dr, drainage))
 
 	if(area && .Platform$OS.type != "windows") {
 		res = mapply(.catchment_area, y = y, out_name = catch_names, 
