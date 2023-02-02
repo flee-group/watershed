@@ -1,6 +1,6 @@
 #' Produce a DEM with basins filled in
 #'
-#' @param dem A [raster::raster]; a digital elevation model.
+#' @param dem A [terra::SpatRaster]; a digital elevation model.
 #' @param file The file name of the raster to be returned, see `details`.
 #' @details This is a wrapper for [r.fill.dir](https://grass.osgeo.org/grass76/manuals/r.fill.dir.html)
 #'
@@ -24,7 +24,7 @@ fill_dem = function(dem, file = NA) {
 	.start_grass(dem, inp_name)
 
 	## perform computation
-	rgrass7::execGRASS("r.fill.dir", flags=c("overwrite", "quiet"), input=inp_name,
+	rgrass::execGRASS("r.fill.dir", flags=c("overwrite", "quiet"), input=inp_name,
 				output = out_name, direction = dir_name, areas = problem_name)
 	# make sure to add the names of created rasters to the list of layers
 	ws_env$rasters = c(ws_env$rasters, out_name, dir_name, problem_name)

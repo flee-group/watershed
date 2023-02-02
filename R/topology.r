@@ -76,7 +76,7 @@ reach_topology = function(x, Tp) {
 	# if unix, use multiple cores if mc.cores is specified
 	cores = ifelse(.Platform$OS.type == "unix", getOption("mc.cores", 1L), 1L)
 
-	rids = raster::unique(x[['stream']])
+	rids = terra::unique(x[['stream']])[,1]
 
 	if(!all(rids == 1:length(rids)))
 		stop("Reach IDs not in strict ascending order, they must be renumbered")
@@ -205,8 +205,9 @@ NULL
 	r_top = pids[.headwater(Tp_r)]
 	r_nb = .upstream(Tx, r_top)
 	if(length(r_nb) > 0) {
-		from_ids = x$stream[raster::"%in%"(x$id, r_nb)]
-		res = cbind(to = i, from = from_ids)
+		from_ids = x$stream[terra::"%in%"(x$id, r_nb)]
+		res = cbind(i, from_ids)
+		colnames(res) = c("to", "from")
 	} else {
 		res = NULL
 	}
@@ -246,7 +247,8 @@ NULL
 #' @return A matrix of coordinates
 #' @export
 stream_coordinates = function(x) {
-	raster::coordinates(x)[!is.na(raster::values(x$stream)),, drop = FALSE]
+	x = as.data.frame(x, xy=TRUE)
+	x[complete.cases(x), c('x', 'y'), drop = FALSE]
 }
 
 
