@@ -1,6 +1,6 @@
 Package: watershed
 Title: Tools for Watershed Analysis
-Version: 0.4.10
+Version: 0.4.11
 Authors@R: 
     person(given = "Lauren",
            family = "Talluto",
@@ -17,18 +17,18 @@ RoxygenNote: 7.1.2
 Depends:
     R (>= 4.1.0)
 Imports:
-#    rgrass7 (>= 0.2),
-#    raster (>= 3.3),
-#    sf (>= 0.9),
-#    units (>= 0.6),
-#    terra (>= 1.5),
-#    Matrix (>= 1.2)
+    rgrass (>= 0.2),
+    raster (>= 3.3),
+    sf (>= 0.9),
+    units (>= 0.6),
+    terra (>= 1.5),
+    Matrix (>= 1.2)
 SystemRequirements:
-#	GRASS GIS (>= 7.4)
+	GRASS GIS (>= 7.4)
 Suggests: 
-#    data.table (>= 1.14),
-#    knitr,
-#    rmarkdown,
-#    testthat,
-#    fasterize
+    data.table (>= 1.14),
+    knitr,
+    rmarkdown,
+    testthat,
+    fasterize
 VignetteBuilder: knitr
