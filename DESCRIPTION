@@ -1,6 +1,6 @@
 Package: watershed
 Title: Tools for Watershed Analysis
-Version: 0.4.9
+Version: 0.4.10
 Authors@R: 
     person(given = "Lauren",
            family = "Talluto",
