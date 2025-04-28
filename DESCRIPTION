@@ -1,13 +1,13 @@
 Package: watershed
-Title: Tools for Watershed Delineation
+Title: Tools for Watershed Analysis
 Version: 0.4.9
 Authors@R: 
-    person(given = "Matthew",
+    person(given = "Lauren",
            family = "Talluto",
            role = c("aut", "cre", "cph"),
-           email = "matthew.talluto@uibk.ac.at",
+           email = "lauren.talluto@uibk.ac.at",
            comment = c("ORCID" = "0000-0001-5188-7332"))
-Description: This is a simplified set of tools for deriving a river network from digital elevation data. The package relies on GRASS GIS (v. 7.4 to 7.8) to do the heavy lifting. An installation of GRASS and the rgrass7 package is required for watershed to function. Note that this is meant to be a simplified workflow for watershed delineation using only R code; for more options users can use rgrass7 to access GRASS GIS functions directly.
+Description: These tools are meant for topological analysis of watersheds. They are centred around an S4 class (Watershed) that is created using this package. A companion package (wsGrass) is also available for generating the layers needed for creating this Watershed, and for other analyses that depend on Grass GIS.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: en
@@ -17,18 +17,18 @@ RoxygenNote: 7.1.2
 Depends:
     R (>= 4.1.0)
 Imports:
-    rgrass7 (>= 0.2),
-    raster (>= 3.3),
-    sf (>= 0.9),
-    units (>= 0.6),
-    terra (>= 1.5),
-    Matrix (>= 1.2)
+#    rgrass7 (>= 0.2),
+#    raster (>= 3.3),
+#    sf (>= 0.9),
+#    units (>= 0.6),
+#    terra (>= 1.5),
+#    Matrix (>= 1.2)
 SystemRequirements:
-	GRASS GIS (>= 7.4)
+#	GRASS GIS (>= 7.4)
 Suggests: 
-    data.table (>= 1.14),
-    knitr,
-    rmarkdown,
-    testthat,
-    fasterize
+#    data.table (>= 1.14),
+#    knitr,
+#    rmarkdown,
+#    testthat,
+#    fasterize
 VignetteBuilder: knitr
